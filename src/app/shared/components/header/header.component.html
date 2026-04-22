@@ -1,0 +1,43 @@
+<ion-header>
+  <ion-toolbar class="app-toolbar">
+    <div class="header-container">
+      <div class="brand">
+        <img [src]="logo" [alt]="title" class="logo" />
+        <span class="title">{{ title }}</span>
+      </div>
+
+      <div class="user-info">
+        <span class="username">{{ userName }}</span>
+
+        <button
+          id="profile-menu-trigger"
+          class="avatar-trigger"
+          type="button"
+          aria-label="Abrir menu de perfil">
+          <ion-icon name="accessibility-outline"></ion-icon>
+          <ion-avatar class="avatar">
+            <img [src]="profileImage" [alt]="userName" />
+          </ion-avatar>
+        </button>
+
+        <ion-popover
+          trigger="profile-menu-trigger"
+          dismissOnSelect="true"
+          side="bottom"
+          alignment="end"
+          cssClass="profile-menu-popover">
+          <ng-template>
+            <ion-list lines="none">
+                <ion-item button detail="false" (click)="logout()">
+                <ion-label><ion-icon name="accessibility-outline"></ion-icon>Perfil</ion-label>
+              </ion-item>
+              <ion-item button detail="false" (click)="logout()">
+                <ion-label><ion-icon name="arrow-undo-outline"></ion-icon>Logout</ion-label>
+              </ion-item>
+            </ion-list>
+          </ng-template>
+        </ion-popover>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>

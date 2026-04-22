@@ -1,0 +1,92 @@
+<ion-content class="pocket-content" [fullscreen]="true">
+  <section class="pocket-shell">
+    <header class="match-header">
+      <div class="match-brand">
+        <h1>Sherlock</h1>
+        <p>Modo supervivencia</p>
+      </div>
+      <div class="match-user">
+        <span>Jugador</span>
+        <strong>Nivel 1</strong>
+      </div>
+    </header>
+
+    <section class="stats-grid" *ngIf="!isLoading && !errorMessage && activeQuestion">
+      <article class="stat-box stat-box--time">
+        <span class="stat-label">Tiempo</span>
+        <strong>{{ timeLeft }}s</strong>
+        <div class="stat-timer-track">
+          <span class="stat-timer-fill" [style.width.%]="getTimerProgress()"></span>
+        </div>
+      </article>
+
+      <article class="stat-box stat-box--points">
+        <span class="stat-label">Puntos</span>
+        <strong>{{ totalPoints }}</strong>
+      </article>
+
+      <article class="stat-box stat-box--streak">
+        <span class="stat-label">Racha</span>
+        <strong>{{ streak }}x</strong>
+      </article>
+    </section>
+
+    <div *ngIf="isLoading" class="state-center">
+      <ion-spinner name="crescent" color="light"></ion-spinner>
+      <p>Cargando preguntas...</p>
+    </div>
+
+    <div *ngIf="!isLoading && errorMessage" class="state-center state-center--error">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage && !activeQuestion" class="state-center">
+      <p>No hay preguntas disponibles para esta sesion.</p>
+    </div>
+
+    <article class="question-card" *ngIf="!isLoading && !errorMessage && activeQuestion">
+      <div class="question-banner">
+        <span class="question-topic">{{ activeQuestion.explanation }}</span>
+        <span class="question-points">{{ activeQuestion.points }} pts</span>
+      </div>
+
+      <div class="question-card__top">
+        <span class="question-order">Pregunta {{ activeQuestion.questionOrder }} de {{ questions.length }}</span>
+        <div class="question-progress" aria-hidden="true">
+          <span *ngFor="let question of questions; let i = index" [class]="getProgressStepClass(i)"></span>
+        </div>
+      </div>
+
+      <h2>{{ activeQuestion.questionText }}</h2>
+
+      <div *ngIf="isLoadingOptions" class="options-state">
+        <ion-spinner name="crescent" color="light"></ion-spinner>
+        <p>Cargando respuestas...</p>
+      </div>
+
+      <div class="options-list" *ngIf="!isLoadingOptions && options.length > 0">
+        <button
+          class="option-item"
+          type="button"
+          *ngFor="let option of options"
+          (click)="selectOption(option.id)"
+          [class.option-item--selected]="isOptionSelected(option.id)"
+          [disabled]="isGameFinished || hasAnsweredCurrentQuestion()">
+          {{ option.optionText }}
+        </button>
+      </div>
+
+      <div class="options-state" *ngIf="!isLoadingOptions && options.length === 0">
+        <p>No hay respuestas disponibles para esta pregunta.</p>
+      </div>
+
+      <p class="finish-message" *ngIf="isGameFinished">
+        Completaste todas las preguntas de Pocket.
+      </p>
+
+      <div class="question-meta">
+        <span>Selecciona tu respuesta antes de que se acabe el tiempo</span>
+      </div>
+    </article>
+  </section>
+</ion-content>

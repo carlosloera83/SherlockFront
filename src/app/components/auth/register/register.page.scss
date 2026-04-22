@@ -1,0 +1,182 @@
+:host {
+  --sherlock-bg: linear-gradient(180deg, #0b1220 0%, #111827 45%, #1f2937 100%);
+  --sherlock-card: rgba(15, 23, 42, 0.88);
+  --sherlock-border: rgba(255, 255, 255, 0.08);
+  --sherlock-text: #f8fafc;
+  --sherlock-muted: #94a3b8;
+  --sherlock-accent: #22c55e;
+  --sherlock-accent-strong: #16a34a;
+  --sherlock-input-bg: rgba(255, 255, 255, 0.04);
+  --sherlock-danger: #ef4444;
+}
+
+ion-content.register-content {
+  --background: var(--sherlock-bg);
+}
+
+.register-shell {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--sherlock-card);
+  border: 1px solid var(--sherlock-border);
+  border-radius: 24px;
+  padding: 28px 22px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+}
+
+.brand-block {
+  text-align: center;
+  margin-bottom: 28px;
+
+  h1 {
+    margin: 12px 0 8px;
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: 0.04rem;
+    color: var(--sherlock-text);
+  }
+
+  p {
+    margin: 0;
+    color: var(--sherlock-muted);
+    font-size: 0.95rem;
+  }
+}
+
+.brand-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 18px;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    color: var(--sherlock-text);
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding-left: 4px;
+  }
+}
+
+.custom-item {
+  --background: var(--sherlock-input-bg);
+  --border-radius: 16px;
+  --padding-start: 14px;
+  --inner-padding-end: 12px;
+  --min-height: 56px;
+  border: 1px solid var(--sherlock-border);
+  border-radius: 16px;
+  color: var(--sherlock-text);
+}
+
+ion-input {
+  --color: var(--sherlock-text);
+  --placeholder-color: #7c8aa0;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+}
+
+.password-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--sherlock-accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.password-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  padding-left: 4px;
+
+  span {
+    font-size: 0.82rem;
+    color: var(--sherlock-muted);
+    transition: color 0.2s ease;
+  }
+
+  span.valid {
+    color: var(--sherlock-accent);
+    font-weight: 600;
+  }
+}
+
+.error-text {
+  padding-left: 4px;
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--sherlock-danger);
+  }
+}
+
+.register-button {
+  margin-top: 8px;
+  --background: var(--sherlock-accent);
+  --background-hover: var(--sherlock-accent-strong);
+  --background-activated: var(--sherlock-accent-strong);
+  --border-radius: 16px;
+  --box-shadow: 0 12px 24px rgba(34, 197, 94, 0.25);
+  min-height: 52px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.register-links {
+  text-align: center;
+  margin-top: 4px;
+
+  p {
+    margin: 0;
+    color: var(--sherlock-muted);
+    font-size: 0.92rem;
+  }
+
+  a {
+    color: var(--sherlock-accent);
+    text-decoration: none;
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-shell {
+    padding: 16px;
+  }
+
+  .register-card {
+    padding: 24px 18px;
+    border-radius: 20px;
+  }
+
+  .brand-block h1 {
+    font-size: 1.6rem;
+  }
+
+  .password-rules {
+    grid-template-columns: 1fr;
+  }
+}

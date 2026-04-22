@@ -1,0 +1,83 @@
+<ion-content class="page-content" [fullscreen]="true">
+  <section class="games-shell">
+    <header class="games-header">
+      <p>Explora las partidas activas y entra al modo que mejor se adapte a tu estrategia.</p>
+    </header>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="state-center">
+      <ion-spinner name="crescent" color="light"></ion-spinner>
+      <p>Cargando partidas...</p>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="!isLoading && errorMessage" class="state-center state-center--error">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!isLoading && !errorMessage && games.length === 0" class="state-center">
+      <p>No hay partidas activas en este momento.</p>
+    </div>
+
+    <!-- Game list -->
+    <div class="games-grid" *ngIf="!isLoading && !errorMessage && games.length > 0">
+      <article
+        class="game-card"
+        *ngFor="let game of games"
+        [style.background-image]="game.backgroundImage">
+        <div class="game-card__overlay">
+          <div class="game-card__top">
+            <span class="status-badge"
+              [class.status-badge--warning]="game.statusTone === 'warning'"
+              [class.status-badge--success]="game.statusTone === 'success'"
+              [class.status-badge--neutral]="game.statusTone === 'neutral'">
+              {{ game.status }}
+            </span>
+
+            <div class="game-copy">
+              <h2>{{ game.title }}</h2>
+              <p>{{ game.subtitle }}</p>
+            </div>
+          </div>
+
+          <div class="game-card__bottom">
+            <div class="meta-cluster meta-cluster--left">
+              <div class="meta-item">
+                <span class="meta-glyph meta-glyph--players" aria-hidden="true"></span>
+                <span>{{ game.players }}</span>
+              </div>
+
+              <div class="meta-item">
+                <span class="meta-glyph meta-glyph--energy" aria-hidden="true"></span>
+                <span>{{ game.energy }}</span>
+              </div>
+            </div>
+
+            <div class="meta-cluster meta-cluster--right">
+              <div class="meta-item meta-item--highlight">
+                <span class="meta-glyph meta-glyph--trophy" aria-hidden="true"></span>
+                <span>{{ game.completion }}</span>
+              </div>
+
+              <div class="meta-item meta-item--time">
+                <span class="meta-glyph meta-glyph--time" aria-hidden="true"></span>
+                <span>{{ game.schedule }}</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="drop-button"
+            [class.drop-button--joined]="game.isUserInGame"
+            type="button"
+            [style.background]="game.isUserInGame ? '#1e293b' : game.ctaGradient"
+            (click)="openGame(game.session)"
+            [disabled]="game.availableSpots === 0 && !game.isUserInGame">
+            {{ game.isUserInGame ? 'YA UNIDO' : (game.availableSpots === 0 ? 'LLENO' : 'DROP IN') }}
+          </button>
+        </div>
+      </article>
+    </div>
+  </section>
+</ion-content>

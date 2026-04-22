@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  --sherlock-toolbar-bg: #020617;
+  --sherlock-text: #f8fafc;
+  --sherlock-muted: #94a3b8;
+  --sherlock-border: rgba(255, 255, 255, 0.08);
+}
+
+.app-toolbar {
+  --background: var(--sherlock-toolbar-bg);
+  --color: var(--sherlock-text);
+  --min-height: 72px;
+  border-bottom: 1px solid var(--sherlock-border);
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.title {
+  color: var(--sherlock-text);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08rem;
+  white-space: nowrap;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.username {
+  color: var(--sherlock-muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.avatar-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
