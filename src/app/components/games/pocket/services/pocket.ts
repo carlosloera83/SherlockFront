@@ -8,19 +8,19 @@ import { ApiResponsePocket, PocketQuestion, PocketQuestionOption } from '../clas
   providedIn: 'root',
 })
 export class PocketService {
-  private readonly baseUrl = `${environment.apiUrl}/Games`;
+  private readonly baseUrl = `${environment.apiUrl}/GameQuestions`;
 
   constructor(private http: HttpClient) {}
 
   getQuestions(gameSessionId: string): Observable<ApiResponsePocket<PocketQuestion[]>> {
     return this.http.get<ApiResponsePocket<PocketQuestion[]>>(
-      `${this.baseUrl}/Questions?gameSessionId=${gameSessionId}`
+      `${this.baseUrl}/QuestionsBySession?gameSessionId=${gameSessionId}`
     );
   }
 
   getQuestionOptions(questionId: string): Observable<ApiResponsePocket<PocketQuestionOption[]>> {
     return this.http.get<ApiResponsePocket<PocketQuestionOption[]>>(
-      `${this.baseUrl}/QuestionOptions?questionId=${questionId}`
+      `${this.baseUrl}/QuestionOptionsByQuestion?questionId=${questionId}`
     );
   }
 }

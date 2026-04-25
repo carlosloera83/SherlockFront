@@ -1,11 +1,20 @@
-<app-header
-  title="SHERLOCK"
-  [userName]="userName"
-  profileImage="https://i.pravatar.cc/150?img=12">
-</app-header>
+<ion-menu contentId="main-content" type="overlay" #menu class="sherlock-side-menu">
+  <ion-content [scrollY]="false" class="sherlock-side-menu__content">
+    <app-sidebar-menu [userName]="userName" (menuClose)="closeMenu()"></app-sidebar-menu>
+  </ion-content>
+</ion-menu>
 
-<div class="layout-body">
-  <router-outlet></router-outlet>
+<div id="main-content" class="main-content">
+  <app-header
+    title="SHERLOCK"
+    [userName]="userName"
+    profileImage="https://i.pravatar.cc/150?img=12"
+    (menuClick)="toggleMenu()">
+  </app-header>
+
+  <div class="layout-body">
+    <router-outlet></router-outlet>
+  </div>
+
+  <app-footer></app-footer>
 </div>
-
-<app-footer></app-footer>

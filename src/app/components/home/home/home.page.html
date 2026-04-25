@@ -1,11 +1,42 @@
- 
+<ion-content class="home-content" [fullscreen]="false" [scrollY]="false" [forceOverscroll]="false">
+  <section class="home-hero">
+    <div class="home-hero__overlay"></div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">{{ userName }}</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <div class="floating-icons" aria-hidden="true">
+      <ion-icon class="float-icon float-icon--map" name="map-outline"></ion-icon>
+      <ion-icon class="float-icon float-icon--pin" name="location-outline"></ion-icon>
+      <ion-icon class="float-icon float-icon--compass" name="compass-outline"></ion-icon>
+      <ion-icon class="float-icon float-icon--navigate" name="navigate-outline"></ion-icon>
+    </div>
 
-  
+    <div class="hero-core" aria-hidden="true"></div>
+
+    <div class="hero-copy">
+      <p class="hero-user">Bienvenido, {{ userName }}</p>
+      <h1>Descubre el Misterio</h1>
+      <p>
+        Resuelve acertijos, explora lugares ocultos y descubre secretos que esperan ser revelados.
+      </p>
+    </div>
+
+    <div class="hero-cards" aria-label="Acciones principales">
+      <button class="action-card" type="button">
+        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+        <strong>Observa</strong>
+        <span>Cada detalle cuenta</span>
+      </button>
+
+      <button class="action-card" type="button">
+        <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+        <strong>Investiga</strong>
+        <span>Encuentra las pistas</span>
+      </button>
+
+      <button class="action-card" type="button">
+        <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+        <strong>Explora</strong>
+        <span>Descubre lugares</span>
+      </button>
+    </div>
+  </section>
 </ion-content>

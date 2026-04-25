@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .pocket-content {
   --background:
     radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.34), transparent 22%),
@@ -5,8 +10,16 @@
     linear-gradient(180deg, #050525 0%, #220647 28%, #2d0c70 100%);
 }
 
+.pocket-content::part(scroll) {
+  display: flex;
+}
+
 .pocket-shell {
-  padding: 0.8rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.65rem 0.85rem calc(0.8rem + env(safe-area-inset-bottom));
   color: #f8fafc;
 }
 
@@ -15,7 +28,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.75rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.6rem;
 }
 
 .match-brand h1 {
@@ -47,7 +60,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
-  margin-bottom: 0.95rem;
+  margin-bottom: 0.65rem;
 }
 
 .stat-box {
@@ -122,6 +135,8 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -159,16 +174,16 @@
 
 .question-card h2 {
   margin: 0;
-  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.25rem, 3.9vw, 2rem);
   line-height: 1.25;
   color: #f1f5f9;
-  padding: 1.4rem 1.35rem 1rem;
+  padding: 1rem 1.05rem 0.7rem;
 }
 
 .options-list {
   display: grid;
-  gap: 0.7rem;
-  padding: 0 1.35rem 1rem;
+  gap: 0.55rem;
+  padding: 0 1.05rem 0.7rem;
 }
 
 .option-item {
@@ -176,9 +191,9 @@
   background: rgba(21, 30, 78, 0.75);
   color: #f8fafc;
   border-radius: 14px;
-  padding: 0.85rem 1rem;
+  padding: 0.65rem 0.85rem;
   text-align: left;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -215,9 +230,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 50px;
+  min-height: 42px;
   color: #94a3b8;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   border-top: 1px solid rgba(56, 189, 248, 0.2);
 }
 
@@ -260,7 +275,7 @@
 
 @media (min-width: 768px) {
   .pocket-shell {
-    padding: 1rem 1.1rem calc(6rem + env(safe-area-inset-bottom));
+    padding: 0.85rem 1rem calc(1rem + env(safe-area-inset-bottom));
   }
 
   .question-card h2 {

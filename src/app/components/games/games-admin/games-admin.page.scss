@@ -1,0 +1,61 @@
+.page-content {
+  --background: #0b1220;
+}
+
+.admin-shell {
+  color: #e2e8f0;
+  padding: 1.25rem;
+  overflow-x: hidden;
+}
+
+.admin-header {
+  margin-bottom: 1.25rem;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+
+  h2 {
+    margin: 0 0 0.2rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04rem;
+    color: #f8fafc;
+  }
+
+  p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+}
+
+ion-button {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+@media (max-width: 576px) {
+  .admin-shell {
+    padding: 1rem;
+  }
+
+  .header-row {
+    align-items: stretch;
+  }
+
+  ion-button {
+    width: 100%;
+    margin: 0;
+  }
+}

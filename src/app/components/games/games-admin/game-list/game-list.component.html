@@ -1,0 +1,103 @@
+
+ 
+<!-- Loading State -->
+<div class="loading-container" *ngIf="isLoading && games.length === 0">
+  <ion-spinner name="crescent" color="primary"></ion-spinner>
+  <p class="loading-text">Cargando juegos...</p>
+</div>
+
+<!-- Error State -->
+<div class="error-container" *ngIf="errorMessage && !isLoading">
+  <ion-icon name="close-circle" class="error-icon"></ion-icon>
+  <p class="error-text">{{ errorMessage }}</p>
+  <ion-button fill="outline" size="small" (click)="loadGames()">
+    <ion-icon name="refresh-outline" slot="start"></ion-icon>
+    Reintentar
+  </ion-button>
+</div>
+
+<!-- Games Grid -->
+<div class="games-list-header" *ngIf="games.length > 0">
+  <h2 class="section-title">Juegos Registrados</h2>
+  <ion-badge class="count-badge" color="primary">{{ games.length }}</ion-badge>
+</div>
+
+<div class="games-grid" *ngIf="games.length > 0">
+  <div class="game-col" *ngFor="let game of games">
+    <ion-card class="game-card">
+
+      <!-- Barra de color superior -->
+      <div class="card-top-bar" [class.active]="game.isActive" [class.inactive]="!game.isActive"></div>
+
+      <ion-card-header>
+        <div class="card-header-row">
+          <div class="title-section">
+            <ion-card-title class="game-title">{{ game.name }}</ion-card-title>
+            <ion-card-subtitle class="game-description">{{ game.description }}</ion-card-subtitle>
+          </div>
+          <ion-badge
+            class="status-badge"
+            [color]="game.isActive ? 'success' : 'medium'">
+            <ion-icon [name]="game.isActive ? 'checkmark-circle' : 'close-circle'" slot="start"></ion-icon>
+            {{ game.isActive ? 'Activo' : 'Inactivo' }}
+          </ion-badge>
+        </div>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <ion-icon name="cash-outline" class="stat-icon gold"></ion-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ game.entryCostPoints }}</span>
+              <span class="stat-label">Puntos entrada</span>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <ion-icon name="time-outline" class="stat-icon blue"></ion-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ game.durationMinutes }} min</span>
+              <span class="stat-label">Duración</span>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <ion-icon name="people-outline" class="stat-icon purple"></ion-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ game.minPlayers }} – {{ game.maxPlayers }}</span>
+              <span class="stat-label">Jugadores</span>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <ion-icon name="trophy-outline" class="stat-icon green"></ion-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ game.rewardPercentage }}%</span>
+              <span class="stat-label">Recompensa</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <span class="created-date">Creado: {{ game.createdAt | date:'dd/MM/yyyy' }}</span>
+          <ion-button
+            class="edit-btn"
+            fill="outline"
+            size="small"
+            color="warning"
+            (click)="onEdit(game)">
+            <ion-icon name="create-outline" slot="start"></ion-icon>
+            Editar
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div class="empty-container" *ngIf="!isLoading && !errorMessage && games.length === 0">
+  <ion-icon name="trophy-outline" class="empty-icon"></ion-icon>
+  <p class="empty-text">No hay juegos registrados aún</p>
+</div>

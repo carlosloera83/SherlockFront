@@ -1,0 +1,290 @@
+<ion-content class="page-content" [fullscreen]="true">
+  <section class="session-shell">
+
+    <header class="session-header">
+      <div class="header-row">
+        <ion-button fill="clear" color="light" (click)="goBack()">
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Volver
+        </ion-button>
+        <div class="header-copy">
+          <h2>Nueva sesión completa</h2>
+          <p>Configura la sesión primero y después agrega preguntas en tarjetas separadas.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="stepper-card">
+      <div class="stepper-header">
+        <div class="stepper-step" [class.is-active]="currentStep === 1" [class.is-complete]="currentStep > 1">
+          <span class="step-index">1</span>
+          <div>
+            <strong>Configuración</strong>
+            <p>Datos base de la sesión</p>
+          </div>
+        </div>
+        <div class="stepper-line" [class.is-complete]="currentStep > 1"></div>
+        <div class="stepper-step" [class.is-active]="currentStep === 2">
+          <span class="step-index">2</span>
+          <div>
+            <strong>Preguntas</strong>
+            <p>Una card por pregunta</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <ion-card class="session-card">
+      <ion-card-header>
+        <ion-card-title>Nueva Sesión de Juego</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+
+        <div class="loading-games" *ngIf="isLoadingGames">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <span>Cargando juegos...</span>
+        </div>
+
+        <div class="loading-games" *ngIf="isLoadingStatuses">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <span>Cargando estatus...</span>
+        </div>
+
+        <form [formGroup]="sessionForm" (ngSubmit)="onSubmit()" *ngIf="!isLoadingGames">
+          <section class="step-content" *ngIf="currentStep === 1">
+            <div class="section-intro">
+              <h3>Configuración de la sesión</h3>
+              <p>Define el juego, estado, horario y descripción antes de capturar preguntas.</p>
+            </div>
+
+            <div class="split-grid">
+              <ion-item class="form-item">
+                <ion-label position="stacked">Juego *</ion-label>
+                <ion-select
+                  formControlName="gameId"
+                  placeholder="Selecciona un juego"
+                  interface="popover">
+                  <ion-select-option *ngFor="let game of games" [value]="game.id">
+                    {{ game.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+
+              <ion-item class="form-item">
+                <ion-label position="stacked">Estatus de sesión *</ion-label>
+                <ion-select
+                  formControlName="gameStatusId"
+                  placeholder="Selecciona un estatus"
+                  interface="popover"
+                >
+                  <ion-select-option *ngFor="let status of gameStatusOptions" [value]="status.value">
+                    {{ status.name }} ({{ status.code }})
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+            </div>
+
+            <ion-item class="form-item">
+              <ion-label position="stacked">Nombre *</ion-label>
+              <ion-input formControlName="name" placeholder="Ej. Sesión Sherlock Completa"></ion-input>
+            </ion-item>
+
+            <ion-item class="form-item">
+              <ion-label position="stacked">Descripción *</ion-label>
+              <ion-textarea
+                formControlName="description"
+                rows="2"
+                placeholder="Descripción de la sesión"
+              ></ion-textarea>
+            </ion-item>
+
+            <div class="split-grid">
+              <ion-item class="form-item">
+                <ion-label position="stacked">Fecha de sesión *</ion-label>
+                <ion-input type="date" formControlName="sessionDate"></ion-input>
+              </ion-item>
+
+              <ion-item class="form-item">
+                <ion-label position="stacked">Hora inicio *</ion-label>
+                <ion-input type="datetime-local" formControlName="scheduledStartTime"></ion-input>
+              </ion-item>
+            </div>
+
+            <ion-item class="form-item">
+              <ion-label position="stacked">Hora fin *</ion-label>
+              <ion-input type="datetime-local" formControlName="scheduledEndTime"></ion-input>
+            </ion-item>
+
+            <div class="field-error" *ngIf="sessionForm.invalid && sessionForm.touched">
+              Revisa los campos obligatorios de la sesión.
+            </div>
+          </section>
+
+          <section class="step-content" *ngIf="currentStep === 2">
+            <div class="section-intro questions-intro">
+              <div>
+                <h3>Preguntas de la sesión</h3>
+                <p>Cada pregunta vive en su propia card para editarla con claridad.</p>
+              </div>
+              <span class="question-count">{{ questionsFormArray.length }} pregunta(s)</span>
+            </div>
+
+            <section formArrayName="questions" class="questions-section">
+              <div class="questions-header">
+                <h3>Listado</h3>
+                <ion-button type="button" fill="outline" size="small" (click)="addQuestion()">
+                  <ion-icon slot="start" name="add-outline"></ion-icon>
+                  Agregar pregunta
+                </ion-button>
+              </div>
+
+              <div
+                class="question-card"
+                *ngFor="let question of questionsFormArray.controls; let questionIndex = index"
+                [formGroupName]="questionIndex"
+              >
+                <div class="question-header-row">
+                  <div>
+                    <h4>Pregunta {{ questionIndex + 1 }}</h4>
+                    <p>Card individual para texto, metadata y opciones.</p>
+                  </div>
+                  <ion-button
+                    type="button"
+                    fill="clear"
+                    color="danger"
+                    [disabled]="questionsFormArray.length <= 1"
+                    (click)="removeQuestion(questionIndex)"
+                  >
+                    <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+                </div>
+
+                <div class="split-grid compact-grid">
+                  <ion-item class="form-item">
+                    <ion-label position="stacked">TempQuestionId *</ion-label>
+                    <ion-input formControlName="tempQuestionId" type="number"></ion-input>
+                  </ion-item>
+                  <ion-item class="form-item">
+                    <ion-label position="stacked">Orden *</ion-label>
+                    <ion-input formControlName="questionOrder" type="number"></ion-input>
+                  </ion-item>
+                </div>
+
+                <ion-item class="form-item">
+                  <ion-label position="stacked">Texto pregunta *</ion-label>
+                  <ion-input formControlName="questionText"></ion-input>
+                </ion-item>
+
+                <ion-item class="form-item">
+                  <ion-label position="stacked">Explicación *</ion-label>
+                  <ion-textarea formControlName="explanation" rows="2"></ion-textarea>
+                </ion-item>
+
+                <div class="split-grid compact-grid">
+                  <ion-item class="form-item">
+                    <ion-label position="stacked">Dificultad *</ion-label>
+                    <ion-input formControlName="difficultyLevel" type="number"></ion-input>
+                  </ion-item>
+                  <ion-item class="form-item">
+                    <ion-label position="stacked">Puntos *</ion-label>
+                    <ion-input formControlName="points" type="number"></ion-input>
+                  </ion-item>
+                </div>
+
+                <ion-item class="form-item toggle-item">
+                  <ion-label>Pregunta requerida</ion-label>
+                  <ion-toggle formControlName="isRequired"></ion-toggle>
+                </ion-item>
+
+                <section formArrayName="options" class="options-section">
+                  <div class="options-header">
+                    <h5>Opciones</h5>
+                    <ion-button type="button" fill="outline" size="small" (click)="addOption(questionIndex)">
+                      <ion-icon slot="start" name="add-outline"></ion-icon>
+                      Agregar opción
+                    </ion-button>
+                  </div>
+
+                  <div
+                    class="option-row"
+                    *ngFor="let option of getQuestionOptions(questionIndex).controls; let optionIndex = index"
+                    [formGroupName]="optionIndex"
+                  >
+                    <ion-item class="form-item option-text">
+                      <ion-label position="stacked">Opción {{ optionIndex + 1 }}</ion-label>
+                      <ion-input formControlName="optionText"></ion-input>
+                    </ion-item>
+
+                    <ion-item lines="none" class="correct-item">
+                      <ion-checkbox formControlName="isCorrect"></ion-checkbox>
+                      <ion-label>Correcta</ion-label>
+                    </ion-item>
+
+                    <ion-button
+                      type="button"
+                      fill="clear"
+                      color="danger"
+                      [disabled]="getQuestionOptions(questionIndex).length <= 2"
+                      (click)="removeOption(questionIndex, optionIndex)"
+                    >
+                      <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+                    </ion-button>
+                  </div>
+                </section>
+              </div>
+            </section>
+          </section>
+
+          <div class="form-actions">
+            <ion-button
+              type="button"
+              fill="outline"
+              color="medium"
+              (click)="currentStep === 1 ? goBack() : goToSessionStep()">
+              <ion-icon name="close-outline" slot="start"></ion-icon>
+              {{ currentStep === 1 ? 'Cancelar' : 'Anterior' }}
+            </ion-button>
+
+            <ion-button *ngIf="currentStep === 1" type="button" color="primary" (click)="goToQuestionsStep()">
+              <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+              Siguiente: preguntas
+            </ion-button>
+
+            <ion-button
+              *ngIf="currentStep === 2"
+              type="submit"
+              color="primary"
+              [disabled]="isLoading">
+              <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+              Crear sesión completa
+            </ion-button>
+          </div>
+
+          <div class="created-ref" *ngIf="createdSessionId">
+            Última sesión creada: {{ createdSessionId }}
+          </div>
+
+        </form>
+      </ion-card-content>
+    </ion-card>
+
+  </section>
+</ion-content>
+
+<ion-loading [isOpen]="isLoading" message="Creando sesión completa..."></ion-loading>
+
+<div class="alert-overlay" *ngIf="showAlert" (click)="closeAlert()">
+  <div class="alert-dialog" (click)="$event.stopPropagation()">
+    <button class="alert-close" type="button" (click)="closeAlert()" aria-label="Cerrar modal">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+    <h3>{{ alertTitle }}</h3>
+    <p>{{ alertMessage }}</p>
+    <div class="alert-actions">
+      <ion-button type="button" color="primary" (click)="closeAlert()">
+        Cerrar
+      </ion-button>
+    </div>
+  </div>
+</div>

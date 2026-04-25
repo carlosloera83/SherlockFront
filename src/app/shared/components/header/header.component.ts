@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { addIcons } from 'ionicons';
-import { accessibilityOutline, arrowUndoOutline } from 'ionicons/icons';
+import { accessibilityOutline, arrowUndoOutline, menuOutline } from 'ionicons/icons';
 import {
   IonAvatar,
   IonHeader,
@@ -34,15 +34,21 @@ export class HeaderComponent {
   @Input() userName = 'Jugador';
   @Input() profileImage = 'assets/images/default-avatar.png';
   @Input() logo = 'assets/icon/favicon.png';
+  @Output() menuClick = new EventEmitter<void>();
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {
     addIcons({
-      accessibilityOutline,
-      arrowUndoOutline
+      'accessibility-outline': accessibilityOutline,
+      'arrow-undo-outline': arrowUndoOutline,
+      'menu-outline': menuOutline,
     });
+  }
+
+  onMenuClick(): void {
+    this.menuClick.emit();
   }
 
   async logout(): Promise<void> {

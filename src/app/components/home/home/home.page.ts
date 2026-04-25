@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { IonContent, IonHeader, IonToolbar, IonTitle } from '@ionic/angular/standalone';
+import { IonContent, IonIcon } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { compassOutline, eyeOutline, locationOutline, mapOutline, navigateOutline, searchOutline } from 'ionicons/icons';
 import { AuthService } from '../../auth/services/auth';
 
  
@@ -10,12 +12,21 @@ import { AuthService } from '../../auth/services/auth';
   standalone: true,
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
-  imports: [IonTitle, IonToolbar, IonHeader, CommonModule, IonContent],
+  imports: [CommonModule, IonContent, IonIcon],
 })
 export class HomePage implements OnInit {
   userName = '';
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+    addIcons({
+      'eye-outline': eyeOutline,
+      'search-outline': searchOutline,
+      'location-outline': locationOutline,
+      'map-outline': mapOutline,
+      'compass-outline': compassOutline,
+      'navigate-outline': navigateOutline,
+    });
+  }
 
   async ngOnInit(): Promise<void> {
     const session = await this.authService.getSession();

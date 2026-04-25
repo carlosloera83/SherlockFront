@@ -1,0 +1,235 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.sidebar-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 85% 100%, rgba(147, 51, 234, 0.45), transparent 55%),
+    linear-gradient(180deg, #060b2d 0%, #020a31 56%, #02082a 100%);
+  color: #f8fafc;
+}
+
+.sidebar-profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 14px;
+  background: linear-gradient(90deg, rgba(215, 63, 202, 0.45), rgba(90, 0, 100, 0.25));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.close-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(59, 37, 104, 0.75);
+  color: #d8d4ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.close-button ion-icon {
+  font-size: 1rem;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.avatar-ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(180deg, #f472b6, #8b5cf6);
+}
+
+.avatar-ring img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.status-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #1f1142;
+}
+
+.user-meta {
+  min-width: 0;
+}
+
+.user-meta p {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-meta span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(248, 250, 252, 0.82);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.menu-body {
+  padding: 14px 10px;
+}
+
+.menu-title {
+  margin: 0 0 10px;
+  padding: 0 8px;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.12rem;
+  color: #b7b7ff;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: #e6e8f1;
+  min-height: 40px;
+  border-radius: 12px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(20, 39, 71, 0.75);
+  border: 1px solid transparent;
+}
+
+.menu-link--submenu {
+  width: 100%;
+  cursor: pointer;
+}
+
+.menu-link__left {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.menu-link span {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.menu-link ion-icon {
+  font-size: 1.05rem;
+  color: #d6d9e5;
+}
+
+.menu-link.is-active {
+  color: #ffffff;
+  background: linear-gradient(180deg, #d946ef, #ec008c);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 18px rgba(236, 0, 140, 0.52);
+}
+
+.menu-link.is-active ion-icon {
+  color: #ffffff;
+}
+
+.submenu-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.submenu-chevron {
+  transition: transform 180ms ease;
+}
+
+.menu-link--submenu.is-expanded .submenu-chevron {
+  transform: rotate(90deg);
+}
+
+.submenu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 0 0 14px;
+}
+
+.submenu-link {
+  text-decoration: none;
+  color: #d2dae6;
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(18, 30, 56, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.submenu-link .menu-link__left span {
+  font-size: 0.9rem;
+}
+
+.submenu-link ion-icon {
+  font-size: 0.95rem;
+  color: #9fb2cf;
+}
+
+.submenu-link.is-active {
+  color: #ffffff;
+  background: linear-gradient(180deg, #5b6ff9, #3b43cc);
+  border-color: rgba(167, 180, 255, 0.65);
+}
+
+.submenu-link.is-active ion-icon {
+  color: #ffffff;
+}
+
+.logout-button {
+  margin: auto 10px 14px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #ff000f;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.logout-button ion-icon {
+  font-size: 1.05rem;
+}

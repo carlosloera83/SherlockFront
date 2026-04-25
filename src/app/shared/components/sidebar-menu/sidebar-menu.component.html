@@ -1,0 +1,74 @@
+<section class="sidebar-shell">
+  <header class="sidebar-profile">
+    <button class="close-button" type="button" (click)="onCloseMenu()" aria-label="Cerrar menu">
+      <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+    </button>
+
+    <div class="avatar-wrap" aria-hidden="true">
+      <div class="avatar-ring">
+        <img src="https://i.pravatar.cc/80?img=12" alt="Perfil" />
+      </div>
+      <span class="status-dot"></span>
+    </div>
+
+    <div class="user-meta">
+      <p>{{ userName }}</p>
+      <span>Level 47</span>
+    </div>
+  </header>
+
+  <section class="menu-body">
+    <p class="menu-title">MENU</p>
+
+    <nav class="menu-list" aria-label="Menu principal">
+      <ng-container *ngFor="let item of menuItems">
+        <a
+          *ngIf="!item.children || item.children.length === 0"
+          class="menu-link"
+          [routerLink]="item.route"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="onMenuItemClick()">
+          <span class="menu-link__left">
+            <ion-icon [name]="item.icon" aria-hidden="true"></ion-icon>
+            <span>{{ item.title }}</span>
+          </span>
+        </a>
+
+        <div *ngIf="item.children && item.children.length > 0" class="submenu-wrap">
+          <button
+            type="button"
+            class="menu-link menu-link--submenu"
+            [class.is-expanded]="item.expanded"
+            (click)="toggleSubmenu(item)">
+            <span class="menu-link__left">
+              <ion-icon [name]="item.icon" aria-hidden="true"></ion-icon>
+              <span>{{ item.title }}</span>
+            </span>
+            <ion-icon class="submenu-chevron" name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+          </button>
+
+          <div class="submenu-list" *ngIf="item.expanded">
+            <a
+              *ngFor="let subitem of item.children"
+              class="submenu-link"
+              [routerLink]="subitem.route"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              (click)="onMenuItemClick()">
+              <span class="menu-link__left">
+                <ion-icon [name]="subitem.icon" aria-hidden="true"></ion-icon>
+                <span>{{ subitem.title }}</span>
+              </span>
+            </a>
+          </div>
+        </div>
+      </ng-container>
+    </nav>
+  </section>
+
+  <button type="button" class="logout-button" (click)="onLogout()">
+    <ion-icon name="log-out-outline" aria-hidden="true"></ion-icon>
+    <span>Logout</span>
+  </button>
+</section>

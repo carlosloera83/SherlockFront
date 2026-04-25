@@ -21,6 +21,37 @@
   padding: 10px 16px;
 }
 
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--sherlock-text);
+  font-size: 1.6rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.95);
+  }
+
+  ion-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
+}
+
 .brand {
   display: flex;
   align-items: center;

@@ -1,0 +1,24 @@
+<ion-content class="page-content" [fullscreen]="true">
+  <section class="admin-shell">
+
+    <header class="admin-header">
+      <div class="header-row">
+        <div class="header-copy">
+     
+          <p>Gestiona y configura los juegos disponibles.</p>
+        </div>
+        <ion-button (click)="toggleForm()" color="primary" size="default">
+          <ion-icon name="add-outline" slot="start"></ion-icon>
+          Nuevo Juego
+        </ion-button>
+        <ion-button (click)="goToAddSession()" color="secondary" size="default">
+          <ion-icon name="calendar-outline" slot="start"></ion-icon>
+          Nueva Sesión
+        </ion-button>
+      </div>
+    </header>
+
+    <app-game-list></app-game-list>
+
+  </section>
+</ion-content>

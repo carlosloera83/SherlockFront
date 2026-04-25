@@ -1,6 +1,14 @@
 <ion-header>
   <ion-toolbar class="app-toolbar">
     <div class="header-container">
+      <button
+        class="menu-button"
+        type="button"
+        aria-label="Abrir menú"
+        (click)="onMenuClick()">
+        <ion-icon name="menu-outline" aria-hidden="true"></ion-icon>
+      </button>
+
       <div class="brand">
         <img [src]="logo" [alt]="title" class="logo" />
         <span class="title">{{ title }}</span>

@@ -1,12 +1,102 @@
 :host {
+  display: block;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.main-content {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background: #0f172a;
+  height: 100dvh;
+  min-height: 100dvh;
+  width: 100%;
+  overflow: hidden;
 }
 
 .layout-body {
   flex: 1;
+  display: block;
   min-height: 0;
   overflow: hidden;
+}
+
+.layout-body > router-outlet {
+  display: contents;
+}
+
+// Menú estilos oscuros con header rosa
+::ng-deep ion-menu {
+  --background: #020617;
+  --color: #f8fafc;
+  --width: 280px;
+
+  ion-header {
+    --background: #ec4899;
+    --color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    ion-toolbar {
+      --background: #ec4899;
+      --color: #ffffff;
+
+      ion-title {
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 1rem;
+      }
+    }
+  }
+
+  ion-content {
+    --background: #020617;
+    --color: #f8fafc;
+
+    ion-list {
+      --background: #020617;
+      --color: #f8fafc;
+
+      ion-list-header {
+        --background: #020617;
+        --color: #cbd5e1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+        ion-label {
+          color: #cbd5e1;
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+        }
+      }
+
+      ion-item {
+        --background: #020617;
+        --background-activated: rgba(236, 72, 153, 0.15);
+        --border-color: transparent;
+        --color: #f8fafc;
+        --padding-start: 16px;
+
+        ion-label {
+          color: #f8fafc;
+          font-weight: 500;
+        }
+
+        ion-icon {
+          color: #cbd5e1;
+          margin-right: 8px;
+        }
+
+        &:hover {
+          background: rgba(236, 72, 153, 0.1);
+        }
+      }
+
+      ion-item-divider {
+        --background: rgba(255, 255, 255, 0.08);
+        min-height: 2px;
+      }
+    }
+  }
 }

@@ -36,6 +36,23 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
 
+html,
+body,
+ion-app,
+app-root {
+	height: 100%;
+	overflow: hidden;
+}
+
+ion-content::part(scroll) {
+	scrollbar-width: none;
+}
+
+ion-content::part(scroll)::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+}
+
 .profile-menu-popover {
 	--background: #020617;
 	--color: #f8fafc;
@@ -46,6 +63,21 @@
 	border: 1px solid rgba(255, 255, 255, 0.08);
 	border-radius: 12px;
 	box-shadow: 0 12px 24px rgba(2, 6, 23, 0.45);
+}
+
+/* Estilos del menú lateral */
+ion-menu.sherlock-side-menu {
+	--width: 282px;
+	--background: #050c2f;
+	--color: #f8fafc;
+}
+
+ion-menu.sherlock-side-menu ion-content.sherlock-side-menu__content {
+	--background: transparent;
+	--padding-start: 0;
+	--padding-end: 0;
+	--padding-top: 0;
+	--padding-bottom: 0;
 }
 
 .profile-menu-popover ion-list {

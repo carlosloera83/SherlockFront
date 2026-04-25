@@ -33,10 +33,10 @@ import {
 export class FooterComponent {
   constructor() {
     addIcons({
-      homeOutline,
-      gameControllerOutline,
-      trophyOutline,
-      personOutline,
+      'home-outline': homeOutline,
+      'game-controller-outline': gameControllerOutline,
+      'trophy-outline': trophyOutline,
+      'person-outline': personOutline,
     });
   }
 }

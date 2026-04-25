@@ -75,7 +75,8 @@ export class PocketPage implements OnInit, OnDestroy {
         this.loadOptionsForActiveQuestion();
         this.startTimer();
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error loading questions for Pocket game session:', error);
         this.errorMessage = 'No fue posible cargar las preguntas de Pocket.';
         this.isLoading = false;
       },
