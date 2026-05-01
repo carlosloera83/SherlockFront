@@ -23,6 +23,11 @@ export interface ActiveGameSession {
   canStart: boolean;
   userId: string;
   isUserInGame: boolean;
+  hasUserFinishedGame: boolean;
+  canUserEnterGame: boolean;
+  winnerUserId: string | null;
+  winnerScorePoints: number | null;
+  firstPlace : string | null;
 }
 
 export interface ApiResponseGames<T> {
@@ -31,3 +36,24 @@ export interface ApiResponseGames<T> {
   data: T;
   errors: string[] | null;
 }
+
+export interface JoinGameSessionRequest {
+  gameSessionId: string;
+  userId: string;
+}
+
+export interface JoinGameSessionData {
+  success: boolean;
+  mensaje: string;
+  gameSessionId: string;
+  userId: string;
+  currentPlayers: number;
+  availableSpots: number;
+}
+
+export type JoinGameSessionMessage =
+  | 'USER_JOINED_GAME_SESSION'
+  | 'USER_REJOINED_GAME_SESSION'
+  | 'USER_ALREADY_FINISHED_GAME'
+  | 'GAME_SESSION_FULL'
+  | 'GAME_SESSION_FINISHED_OR_CANCELLED';

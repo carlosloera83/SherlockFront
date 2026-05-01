@@ -29,3 +29,20 @@ export interface ApiResponsePocket<T> {
   data: T;
   errors: string[] | null;
 }
+
+export interface SubmitAnswerRequest {
+  gameSessionId: string;
+  userId: string;
+  gameQuestionId: string;
+  selectedOptions: string[];
+}
+
+export interface SubmitAnswerData {
+  result: string;
+  mensaje: string;
+  isCorrect: boolean;
+  pointsEarned: number;
+  totalScore: number;
+  isGameFinished: boolean;
+  nextQuestionId: string | null;
+}

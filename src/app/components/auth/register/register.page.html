@@ -216,4 +216,12 @@
       </form>
     </div>
   </div>
+
+  <ion-alert
+    [isOpen]="showAlert()"
+    [header]="alertHeader()"
+    [message]="alertMessage()"
+    [buttons]="['Aceptar']"
+    (didDismiss)="handleAlertDismiss()">
+  </ion-alert>
 </ion-content>

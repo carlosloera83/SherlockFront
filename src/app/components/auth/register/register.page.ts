@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   AbstractControl,
   FormBuilder,
@@ -14,8 +15,12 @@ import {
   IonContent,
   IonInput,
   IonItem,
+  IonAlert,
   IonText,
-  IonSpinner, IonHeader, IonToolbar, IonTitle } from '@ionic/angular/standalone';
+  IonSpinner,
+} from '@ionic/angular/standalone';
+import { AuthService } from '../services/auth';
+import { RegisterRequest } from '../class/IRegister';
 
 function passwordMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -35,7 +40,7 @@ function passwordMatchValidator(): ValidatorFn {
   templateUrl: './register.page.html',
   styleUrls: ['./register.page.scss'],
   standalone: true,
-  imports: [IonTitle, IonToolbar, IonHeader, 
+  imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
@@ -43,6 +48,7 @@ function passwordMatchValidator(): ValidatorFn {
     IonItem,
     IonInput,
     IonButton,
+    IonAlert,
     IonText,
     IonSpinner,
   ],
@@ -50,10 +56,15 @@ function passwordMatchValidator(): ValidatorFn {
 export class RegisterPage {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   protected readonly isSubmitting = signal(false);
   protected readonly showPassword = signal(false);
   protected readonly showConfirmPassword = signal(false);
+  protected readonly showAlert = signal(false);
+  protected readonly alertHeader = signal('');
+  protected readonly alertMessage = signal('');
+  protected readonly registrationSucceeded = signal(false);
 
   protected readonly registerForm = this.fb.nonNullable.group(
     {
@@ -128,7 +139,7 @@ export class RegisterPage {
 
     const formValue = this.registerForm.getRawValue();
 
-    const payload = {
+    const payload: RegisterRequest = {
       firstName: formValue.firstName.trim(),
       lastName: formValue.lastName.trim(),
       nickName: formValue.nickName.trim(),
@@ -136,11 +147,75 @@ export class RegisterPage {
       password: formValue.password,
     };
 
-    console.log('Register payload:', payload);
+    this.authService.register(payload).subscribe({
+      next: (response) => {
+        this.isSubmitting.set(false);
 
-    setTimeout(() => {
-      this.isSubmitting.set(false);
-      this.router.navigateByUrl('/login');
-    }, 1000);
+        if (response.success) {
+          this.registrationSucceeded.set(true);
+          this.alertHeader.set('Registro exitoso');
+          this.alertMessage.set(
+            response.data?.mensaje || response.message || 'Tu cuenta fue creada correctamente.'
+          );
+          this.registerForm.reset();
+          this.showAlert.set(true);
+          return;
+        }
+
+        this.showResultAlert(
+          'No se pudo registrar',
+          response.message || response.errors?.[0] || 'No fue posible completar el registro.'
+        );
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isSubmitting.set(false);
+        this.showResultAlert('No se pudo registrar', this.getErrorMessage(error));
+      },
+    });
+  }
+
+  protected handleAlertDismiss(): void {
+    this.showAlert.set(false);
+
+    if (this.registrationSucceeded()) {
+      this.router.navigateByUrl('/login', { replaceUrl: true });
+    }
+  }
+
+  private showResultAlert(header: string, message: string): void {
+    this.registrationSucceeded.set(false);
+    this.alertHeader.set(header);
+    this.alertMessage.set(message);
+    this.showAlert.set(true);
+  }
+
+  private getErrorMessage(error: HttpErrorResponse): string {
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor.';
+    }
+
+    if (error.error) {
+      if (typeof error.error === 'string') {
+        return error.error;
+      }
+
+      if (error.error.message) {
+        return error.error.message;
+      }
+
+      if (Array.isArray(error.error.errors) && error.error.errors.length > 0) {
+        return error.error.errors[0];
+      }
+    }
+
+    if (error.status === 400) {
+      return 'La solicitud de registro es inválida.';
+    }
+
+    if (error.status === 409) {
+      return 'Ya existe una cuenta con ese correo o nickname.';
+    }
+
+    return 'Ocurrió un error inesperado al registrar el usuario.';
   }
 }
