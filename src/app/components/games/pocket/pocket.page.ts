@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IonContent, IonSpinner } from '@ionic/angular/standalone';
 import { PocketQuestion, PocketQuestionOption } from './class/IPocket';
 import { PocketService } from './services/pocket';
+import { AuthService } from '../../auth/services/auth';
 
 const DEFAULT_GAME_SESSION_ID = 'DA0E239A-D9D4-45B9-92A4-FC6B1B69B2A0';
+const DEFAULT_REDIRECT_SECONDS = 15;
 
 @Component({
   selector: 'app-pocket',
@@ -27,22 +29,39 @@ export class PocketPage implements OnInit, OnDestroy {
   isLoadingOptions = false;
   isGameFinished = false;
   errorMessage: string | null = null;
+  redirectSecondsLeft = 0;
+  private gameSessionId = '';
+  private userId = '';
 
   private selectedOptionByQuestionId: Record<string, string> = {};
   private timerHandle: ReturnType<typeof setInterval> | null = null;
+  private redirectHandle: ReturnType<typeof setTimeout> | null = null;
+  private redirectCountdownHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private pocketService: PocketService,
     private route: ActivatedRoute,
+    private authService: AuthService,
+    private router: Router,
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    const session = await this.authService.getSession();
+    if (!session) {
+      this.errorMessage = 'No se encontro la sesion del usuario.';
+      this.isLoading = false;
+      return;
+    }
+
+    this.userId = session.userId.toUpperCase();
     const gameSessionId = this.route.snapshot.queryParamMap.get('gameSessionId') ?? DEFAULT_GAME_SESSION_ID;
-    this.loadQuestions(gameSessionId.toUpperCase());
+    this.gameSessionId = gameSessionId.toUpperCase();
+    this.loadQuestions(this.gameSessionId);
   }
 
   ngOnDestroy(): void {
     this.clearTimer();
+    this.clearRedirectTimers();
   }
 
   private loadQuestions(gameSessionId: string): void {
@@ -51,10 +70,12 @@ export class PocketPage implements OnInit, OnDestroy {
     this.isGameFinished = false;
     this.totalPoints = 0;
     this.streak = 0;
+    this.redirectSecondsLeft = 0;
     this.timeLeft = this.totalQuestionSeconds;
     this.selectedOptionByQuestionId = {};
+    this.clearRedirectTimers();
 
-    this.pocketService.getQuestions(gameSessionId).subscribe({
+    this.pocketService.getQuestions(gameSessionId, this.userId).subscribe({
       next: (response) => {
         if (!response.success) {
           this.errorMessage = response.message;
@@ -117,30 +138,71 @@ export class PocketPage implements OnInit, OnDestroy {
   }
 
   selectOption(optionId: string): void {
-    if (!this.activeQuestion || this.isLoadingOptions || this.isGameFinished) {
+    if (!this.activeQuestion || this.isLoadingOptions || this.isGameFinished || !this.gameSessionId || !this.userId) {
       return;
     }
 
-    const questionId = this.activeQuestion.gameQuestionId;
+    const question = this.activeQuestion;
+    const questionId = question.gameQuestionId;
     if (this.selectedOptionByQuestionId[questionId]) {
       return;
     }
 
     this.selectedOptionByQuestionId[questionId] = optionId;
-    this.totalPoints += this.activeQuestion.points;
-    this.streak += 1;
+    this.isLoadingOptions = true;
 
-    if (this.activeIndex >= this.questions.length - 1) {
-      this.isGameFinished = true;
-      this.clearTimer();
-      return;
-    }
+    this.pocketService.submitAnswer({
+      gameSessionId: this.gameSessionId,
+      userId: this.userId,
+      gameQuestionId: questionId,
+      selectedOptions: [optionId],
+    }).subscribe({
+      next: (response) => {
+        this.isLoadingOptions = false;
 
-    this.activeIndex += 1;
-    this.activeQuestion = this.questions[this.activeIndex];
-    this.timeLeft = this.totalQuestionSeconds;
-    this.options = [];
-    this.loadOptionsForActiveQuestion();
+        if (!response.success || !response.data) {
+          this.errorMessage = response.message || 'No fue posible enviar la respuesta.';
+          delete this.selectedOptionByQuestionId[questionId];
+          return;
+        }
+
+        this.errorMessage = null;
+        this.totalPoints = response.data.totalScore;
+        this.streak = response.data.isCorrect ? this.streak + 1 : 0;
+
+        if (response.data.isGameFinished) {
+          this.finishGame(response.data.totalScore);
+          return;
+        }
+
+        const nextQuestionId = response.data.nextQuestionId;
+        let nextIndex = -1;
+
+        if (nextQuestionId) {
+          nextIndex = this.questions.findIndex((item) => item.gameQuestionId === nextQuestionId);
+        }
+
+        if (nextIndex === -1 && this.activeIndex < this.questions.length - 1) {
+          nextIndex = this.activeIndex + 1;
+        }
+
+        if (nextIndex === -1) {
+          this.finishGame(response.data.totalScore);
+          return;
+        }
+
+        this.activeIndex = nextIndex;
+        this.activeQuestion = this.questions[this.activeIndex];
+        this.timeLeft = this.totalQuestionSeconds;
+        this.options = [];
+        this.loadOptionsForActiveQuestion();
+      },
+      error: () => {
+        this.isLoadingOptions = false;
+        delete this.selectedOptionByQuestionId[questionId];
+        this.errorMessage = 'No fue posible enviar tu respuesta.';
+      },
+    });
   }
 
   isOptionSelected(optionId: string): boolean {
@@ -198,6 +260,40 @@ export class PocketPage implements OnInit, OnDestroy {
     if (this.timerHandle) {
       clearInterval(this.timerHandle);
       this.timerHandle = null;
+    }
+  }
+
+  private finishGame(finalScore: number): void {
+    this.totalPoints = finalScore;
+    this.isGameFinished = true;
+    this.clearTimer();
+    this.startFinalCountdownAndRedirect();
+  }
+
+  private startFinalCountdownAndRedirect(): void {
+    this.clearRedirectTimers();
+    this.redirectSecondsLeft = DEFAULT_REDIRECT_SECONDS;
+
+    this.redirectCountdownHandle = setInterval(() => {
+      if (this.redirectSecondsLeft > 0) {
+        this.redirectSecondsLeft -= 1;
+      }
+    }, 1000);
+
+    this.redirectHandle = setTimeout(() => {
+      this.router.navigate(['/games']);
+    }, DEFAULT_REDIRECT_SECONDS * 1000);
+  }
+
+  private clearRedirectTimers(): void {
+    if (this.redirectHandle) {
+      clearTimeout(this.redirectHandle);
+      this.redirectHandle = null;
+    }
+
+    if (this.redirectCountdownHandle) {
+      clearInterval(this.redirectCountdownHandle);
+      this.redirectCountdownHandle = null;
     }
   }
 }

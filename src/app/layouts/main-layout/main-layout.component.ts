@@ -18,9 +18,8 @@ import { SidebarMenuComponent } from '../../shared/components/sidebar-menu/sideb
     FooterComponent,
     SidebarMenuComponent,
     IonMenu,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
+    
+    
     IonContent,
   ],
   templateUrl: './main-layout.component.html',

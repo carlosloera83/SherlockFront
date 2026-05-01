@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { STORAGE_KEYS } from 'src/app/core/constants/storage.keys';
 import { ApiResponse, LoginRequest, LoginResponseData } from '../class/ILogin';
+import { RegisterRequest, RegisterResponseData } from '../class/IRegister';
  
  
 
@@ -13,11 +14,16 @@ import { ApiResponse, LoginRequest, LoginResponseData } from '../class/ILogin';
 })
 export class AuthService {
   private readonly loginUrl = `${environment.apiUrl}/auth/login`;
+  private readonly registerUrl = `${environment.apiUrl}/auth/register`;
 
   constructor(private http: HttpClient) {}
 
   login(payload: LoginRequest): Observable<ApiResponse<LoginResponseData>> {
     return this.http.post<ApiResponse<LoginResponseData>>(this.loginUrl, payload);
+  }
+
+  register(payload: RegisterRequest): Observable<ApiResponse<RegisterResponseData>> {
+    return this.http.post<ApiResponse<RegisterResponseData>>(this.registerUrl, payload);
   }
 
   async saveSession(user: LoginResponseData): Promise<void> {

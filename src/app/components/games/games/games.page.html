@@ -25,6 +25,7 @@
       <article
         class="game-card"
         *ngFor="let game of games"
+        [class.game-card--winner-flash]="isWinnerFlashing(game.session)"
         [style.background-image]="game.backgroundImage">
         <div class="game-card__overlay">
           <div class="game-card__top">
@@ -38,7 +39,18 @@
             <div class="game-copy">
               <h2>{{ game.title }}</h2>
               <p>{{ game.subtitle }}</p>
+              <p>{{ getSessionInfoText(game.session) }}</p>
             </div>
+
+            <div class="winner-spotlight">
+              <span class="winner-spotlight__icon" aria-hidden="true">&#127942;</span>
+              <div class="winner-spotlight__copy">
+                <span class="winner-spotlight__label">PRIMER LUGAR</span>
+                <span class="winner-spotlight__name">{{ getWinnerDisplayName(game.session) }}</span>
+              </div>
+              <span class="winner-spotlight__points">{{ getWinnerPoints(game.session) }} PTS</span>
+            </div>
+
           </div>
 
           <div class="game-card__bottom">
@@ -66,15 +78,15 @@
               </div>
             </div>
           </div>
-
           <button
             class="drop-button"
-            [class.drop-button--joined]="game.isUserInGame"
+            [class.drop-button--joined]="game.isUserInGame && !isContinueAction(game.session)"
+            [class.drop-button--ready]="isContinueAction(game.session)"
             type="button"
-            [style.background]="game.isUserInGame ? '#1e293b' : game.ctaGradient"
-            (click)="openGame(game.session)"
-            [disabled]="game.availableSpots === 0 && !game.isUserInGame">
-            {{ game.isUserInGame ? 'YA UNIDO' : (game.availableSpots === 0 ? 'LLENO' : 'DROP IN') }}
+            [style.background]="isContinueAction(game.session) ? 'linear-gradient(90deg, #22c55e 0%, #14b8a6 55%, #0ea5e9 100%)' : (game.isUserInGame ? '#1e293b' : game.ctaGradient)"
+            (click)="openGame(game)"
+            [disabled]="isActionDisabled(game.session) || joiningGameSessionId === game.session.gameSessionId">
+            {{ joiningGameSessionId === game.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(game.session) }}
           </button>
         </div>
       </article>
