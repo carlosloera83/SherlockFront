@@ -71,7 +71,7 @@
           *ngFor="let option of options"
           (click)="selectOption(option.id)"
           [class.option-item--selected]="isOptionSelected(option.id)"
-          [disabled]="isGameFinished || hasAnsweredCurrentQuestion()">
+          [disabled]="isGameFinished || hasAnsweredCurrentQuestion() || showRankingModal">
           {{ option.optionText }}
         </button>
       </div>
@@ -80,13 +80,77 @@
         <p>No hay respuestas disponibles para esta pregunta.</p>
       </div>
 
-      <p class="finish-message" *ngIf="isGameFinished">
-        Juego terminado. Puntaje final: {{ totalPoints }} pts. Regresando a la lista de juegos en {{ redirectSecondsLeft }}s.
-      </p>
 
       <div class="question-meta">
         <span>Selecciona tu respuesta antes de que se acabe el tiempo</span>
       </div>
     </article>
+
+    <section class="ranking-modal-backdrop ranking-modal-backdrop--final" *ngIf="showFinalRankingModal" aria-live="polite">
+      <article class="ranking-modal" role="dialog" aria-modal="true" aria-label="Ranking final">
+        <header class="ranking-modal__header ranking-modal__header--final">
+          <h3>🎮 Juego Finalizado</h3>
+          <p class="final-score">Tu puntaje: <strong>{{ totalPoints }} pts</strong></p>
+        </header>
+
+        <div class="ranking-table">
+          <div class="ranking-row ranking-row--head">
+            <span>Posicion</span>
+            <span>Avatar</span>
+            <span>Nombre</span>
+            <span>Puntos</span>
+          </div>
+
+          <div class="ranking-row" *ngFor="let player of finalRankingPlayers"
+            [class.ranking-row--leader]="player.position === 1"
+            [class.ranking-row--neon-pulse]="player.position === 1">
+            <span class="ranking-position">
+              <span class="ranking-crown" *ngIf="player.position === 1" aria-hidden="true">🏆</span>
+              {{ player.position }}
+            </span>
+            <span class="ranking-avatar" [class.ranking-avatar--leader]="player.position === 1">{{ player.avatar }}</span>
+            <span class="ranking-name">{{ player.name }}</span>
+            <span class="ranking-points">{{ player.points }}</span>
+          </div>
+        </div>
+
+        <footer class="ranking-final-footer">
+          <p class="ranking-redirect">Redirigiendo en {{ redirectSecondsLeft }}s...</p>
+          <button class="btn-finalizar" type="button" (click)="navigateToGames()">Finalizar</button>
+        </footer>
+      </article>
+    </section>
+
+    <section class="ranking-modal-backdrop" *ngIf="showRankingModal" aria-live="polite">
+      <article class="ranking-modal" role="dialog" aria-modal="true" aria-label="Ranking actual">
+        <header class="ranking-modal__header">
+          <h3>Ranking en vivo</h3>
+        </header>
+
+        <div class="ranking-table">
+          <div class="ranking-row ranking-row--head">
+            <span>Posicion</span>
+            <span>Avatar</span>
+            <span>Nombre</span>
+            <span>Puntos</span>
+          </div>
+
+          <div class="ranking-row" *ngFor="let player of rankingPlayers" [class.ranking-row--leader]="player.position === 1">
+            <span class="ranking-position">
+              <span class="ranking-crown" *ngIf="player.position === 1" aria-hidden="true">🏆</span>
+              {{ player.position }}
+            </span>
+            <span class="ranking-avatar">{{ player.avatar }}</span>
+            <span class="ranking-name">{{ player.name }}</span>
+            <span class="ranking-points">{{ player.points }}</span>
+          </div>
+        </div>
+
+        <footer class="ranking-next">
+          <span class="ranking-next__label">Siguiente pregunta en</span>
+          <strong class="ranking-next__seconds">{{ rankingCountdown }}s</strong>
+        </footer>
+      </article>
+    </section>
   </section>
 </ion-content>

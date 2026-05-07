@@ -229,15 +229,13 @@ export class GamesPage implements OnInit, OnDestroy {
       return;
     }
 
-    if (actionLabel === 'En espera') {
-      await this.showInfoMessage(
-        `Aun faltan jugadores para iniciar (${session.currentPlayers}/${this.getRequiredPlayers(session)}).`
-      );
+    if (actionLabel === 'Lobby') {
+      this.navigateToLobby(session.gameSessionId, gameRoute);
       return;
     }
 
     if (actionLabel === 'Continuar') {
-      this.navigateToGame(session.gameSessionId, gameRoute);
+      this.navigateToLobby(session.gameSessionId, gameRoute);
       return;
     }
 
@@ -258,7 +256,7 @@ export class GamesPage implements OnInit, OnDestroy {
           this.gamesService.joinGameSession(session.gameSessionId, this.currentUserId)
         );
 
-        const joinMessage = (response.message || response.data?.mensaje || '') as JoinGameSessionMessage;
+        const joinMessage = (response.data?.mensaje || response.message || '') as JoinGameSessionMessage;
 
         if (!response.success) {
           this.errorMessage = response.message || 'No fue posible procesar la partida.';
@@ -283,7 +281,12 @@ export class GamesPage implements OnInit, OnDestroy {
           return;
         }
 
-        if (joinMessage !== 'USER_JOINED_GAME_SESSION' && joinMessage !== 'USER_REJOINED_GAME_SESSION') {
+        const isJoinSuccessMessage =
+          joinMessage === 'USER_REJOINED_GAME_SESSION' ||
+          joinMessage === 'USER_JOINED_GAME_SESSION' ||
+          joinMessage.startsWith('USER_JOINED_');
+
+        if (!isJoinSuccessMessage) {
           this.errorMessage = 'No fue posible unirte a la partida.';
           return;
         }
@@ -292,26 +295,29 @@ export class GamesPage implements OnInit, OnDestroy {
         session.hasUserFinishedGame = false;
 
         if (response.data) {
-          session.currentPlayers = response.data.currentPlayers;
-          session.availableSpots = response.data.availableSpots;
+          if (typeof response.data.currentPlayers === 'number') {
+            session.currentPlayers = response.data.currentPlayers;
+          }
+
+          if (typeof response.data.availableSpots === 'number') {
+            session.availableSpots = response.data.availableSpots;
+          }
         }
 
         game.isUserInGame = true;
 
         if (response.data) {
-          game.availableSpots = response.data.availableSpots;
-          game.players = `${response.data.currentPlayers}/${session.maxPlayers}`;
+          if (typeof response.data.availableSpots === 'number') {
+            game.availableSpots = response.data.availableSpots;
+          }
+
+          if (typeof response.data.currentPlayers === 'number') {
+            game.players = `${response.data.currentPlayers}/${session.maxPlayers}`;
+          }
         }
 
         await this.loadGames(false);
-
-        if (this.hasRequiredPlayers(session)) {
-          await this.showInfoMessage('Ya estan los jugadores necesarios. Ahora puedes presionar Continuar.');
-        } else {
-          await this.showInfoMessage(
-            `Te uniste a la partida. Queda en espera (${session.currentPlayers}/${this.getRequiredPlayers(session)}).`
-          );
-        }
+        this.navigateToLobby(session.gameSessionId, gameRoute);
       } catch {
         this.errorMessage = 'No fue posible unirte al juego. Intenta de nuevo.';
         return;
@@ -335,7 +341,7 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     if (session.isUserInGame && !session.hasUserFinishedGame) {
-      return this.hasRequiredPlayers(session) ? 'Continuar' : 'En espera';
+      return this.hasRequiredPlayers(session) ? 'Continuar' : 'Lobby';
     }
 
     return 'Entrar';
@@ -353,7 +359,11 @@ export class GamesPage implements OnInit, OnDestroy {
   getActionButtonText(session: ActiveGameSession): string {
     const action = this.getActionLabel(session);
     if (action === 'Continuar') {
-      return 'INICIAR AHORA';
+      return 'VER LOBBY';
+    }
+
+    if (action === 'Lobby') {
+      return 'VER LOBBY';
     }
 
     return action;
@@ -422,6 +432,15 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     return 1;
+  }
+
+  private navigateToLobby(gameSessionId: string, gameRoute: string): void {
+    this.router.navigate(['/games/pocket/lobby'], {
+      queryParams: {
+        gameSessionId,
+        gameRoute,
+      },
+    });
   }
 
   private resolveGameRoute(gameTypeCode: string): string | null {

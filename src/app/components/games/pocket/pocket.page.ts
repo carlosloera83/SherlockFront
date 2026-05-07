@@ -2,12 +2,21 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonContent, IonSpinner } from '@ionic/angular/standalone';
-import { PocketQuestion, PocketQuestionOption } from './class/IPocket';
+import { PocketQuestion, PocketQuestionOption, RankingEntry } from './class/IPocket';
 import { PocketService } from './services/pocket';
 import { AuthService } from '../../auth/services/auth';
 
 const DEFAULT_GAME_SESSION_ID = 'DA0E239A-D9D4-45B9-92A4-FC6B1B69B2A0';
 const DEFAULT_REDIRECT_SECONDS = 15;
+const INTERMISSION_SECONDS = 5;
+
+interface RankingPlayer {
+  position: number;
+  name: string;
+  points: number;
+  avatar: string;
+  isCurrentUser?: boolean;
+}
 
 @Component({
   selector: 'app-pocket',
@@ -30,13 +39,20 @@ export class PocketPage implements OnInit, OnDestroy {
   isGameFinished = false;
   errorMessage: string | null = null;
   redirectSecondsLeft = 0;
+  showRankingModal = false;
+  showFinalRankingModal = false;
+  rankingCountdown = 0;
+  rankingPlayers: RankingPlayer[] = [];
+  finalRankingPlayers: RankingPlayer[] = [];
   private gameSessionId = '';
   private userId = '';
 
-  private selectedOptionByQuestionId: Record<string, string> = {};
+  private selectedOptionByQuestionId: Record<string, string | null> = {};
   private timerHandle: ReturnType<typeof setInterval> | null = null;
   private redirectHandle: ReturnType<typeof setTimeout> | null = null;
   private redirectCountdownHandle: ReturnType<typeof setInterval> | null = null;
+  private intermissionHandle: ReturnType<typeof setTimeout> | null = null;
+  private intermissionCountdownHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private pocketService: PocketService,
@@ -62,6 +78,7 @@ export class PocketPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.clearTimer();
     this.clearRedirectTimers();
+    this.clearIntermissionTimers();
   }
 
   private loadQuestions(gameSessionId: string): void {
@@ -71,9 +88,15 @@ export class PocketPage implements OnInit, OnDestroy {
     this.totalPoints = 0;
     this.streak = 0;
     this.redirectSecondsLeft = 0;
+    this.showRankingModal = false;
+    this.showFinalRankingModal = false;
+    this.rankingCountdown = 0;
+    this.rankingPlayers = [];
+    this.finalRankingPlayers = [];
     this.timeLeft = this.totalQuestionSeconds;
     this.selectedOptionByQuestionId = {};
     this.clearRedirectTimers();
+    this.clearIntermissionTimers();
 
     this.pocketService.getQuestions(gameSessionId, this.userId).subscribe({
       next: (response) => {
@@ -142,9 +165,82 @@ export class PocketPage implements OnInit, OnDestroy {
       return;
     }
 
-    const question = this.activeQuestion;
-    const questionId = question.gameQuestionId;
-    if (this.selectedOptionByQuestionId[questionId]) {
+    this.submitCurrentAnswer(optionId);
+  }
+
+  isOptionSelected(optionId: string): boolean {
+    if (!this.activeQuestion) {
+      return false;
+    }
+
+    const selected = this.selectedOptionByQuestionId[this.activeQuestion.gameQuestionId];
+    return selected === optionId;
+  }
+
+  hasAnsweredCurrentQuestion(): boolean {
+    if (!this.activeQuestion) {
+      return false;
+    }
+
+    return Object.prototype.hasOwnProperty.call(
+      this.selectedOptionByQuestionId,
+      this.activeQuestion.gameQuestionId
+    );
+  }
+
+  getTimerProgress(): number {
+    return (this.timeLeft / this.totalQuestionSeconds) * 100;
+  }
+
+  getProgressStepClass(index: number): string {
+    if (index < this.activeIndex) {
+      return 'progress-step progress-step--done';
+    }
+
+    if (index === this.activeIndex) {
+      return 'progress-step progress-step--active';
+    }
+
+    return 'progress-step';
+  }
+
+  private startTimer(): void {
+    this.clearTimer();
+
+    this.timerHandle = setInterval(() => {
+      if (this.isGameFinished || this.isLoading || this.showRankingModal) {
+        return;
+      }
+
+      if (this.timeLeft > 0) {
+        this.timeLeft -= 1;
+        return;
+      }
+
+      this.handleQuestionTimeout();
+    }, 1000);
+  }
+
+  private handleQuestionTimeout(): void {
+    if (!this.activeQuestion || this.isLoadingOptions || this.isGameFinished || !this.gameSessionId || !this.userId) {
+      return;
+    }
+
+    const questionId = this.activeQuestion.gameQuestionId;
+    if (Object.prototype.hasOwnProperty.call(this.selectedOptionByQuestionId, questionId)) {
+      return;
+    }
+
+    this.submitCurrentAnswer(null);
+  }
+
+  private submitCurrentAnswer(optionId: string | null): void {
+    if (!this.activeQuestion || this.isLoadingOptions || this.isGameFinished || !this.gameSessionId || !this.userId) {
+      return;
+    }
+
+    const questionId = this.activeQuestion.gameQuestionId;
+    if (Object.prototype.hasOwnProperty.call(this.selectedOptionByQuestionId, questionId)) {
       return;
     }
 
@@ -155,7 +251,7 @@ export class PocketPage implements OnInit, OnDestroy {
       gameSessionId: this.gameSessionId,
       userId: this.userId,
       gameQuestionId: questionId,
-      selectedOptions: [optionId],
+      selectedOptions: optionId ? [optionId] : [],
     }).subscribe({
       next: (response) => {
         this.isLoadingOptions = false;
@@ -191,11 +287,7 @@ export class PocketPage implements OnInit, OnDestroy {
           return;
         }
 
-        this.activeIndex = nextIndex;
-        this.activeQuestion = this.questions[this.activeIndex];
-        this.timeLeft = this.totalQuestionSeconds;
-        this.options = [];
-        this.loadOptionsForActiveQuestion();
+        this.startInterQuestionModal(nextIndex, response.data.totalScore);
       },
       error: () => {
         this.isLoadingOptions = false;
@@ -203,57 +295,6 @@ export class PocketPage implements OnInit, OnDestroy {
         this.errorMessage = 'No fue posible enviar tu respuesta.';
       },
     });
-  }
-
-  isOptionSelected(optionId: string): boolean {
-    if (!this.activeQuestion) {
-      return false;
-    }
-
-    const selected = this.selectedOptionByQuestionId[this.activeQuestion.gameQuestionId];
-    return selected === optionId;
-  }
-
-  hasAnsweredCurrentQuestion(): boolean {
-    if (!this.activeQuestion) {
-      return false;
-    }
-
-    return !!this.selectedOptionByQuestionId[this.activeQuestion.gameQuestionId];
-  }
-
-  getTimerProgress(): number {
-    return (this.timeLeft / this.totalQuestionSeconds) * 100;
-  }
-
-  getProgressStepClass(index: number): string {
-    if (index < this.activeIndex) {
-      return 'progress-step progress-step--done';
-    }
-
-    if (index === this.activeIndex) {
-      return 'progress-step progress-step--active';
-    }
-
-    return 'progress-step';
-  }
-
-  private startTimer(): void {
-    this.clearTimer();
-
-    this.timerHandle = setInterval(() => {
-      if (this.isGameFinished || this.isLoading) {
-        return;
-      }
-
-      if (this.timeLeft > 0) {
-        this.timeLeft -= 1;
-        return;
-      }
-
-      // Simulacion visual: al terminar, vuelve a iniciar sin cambiar de pregunta.
-      this.timeLeft = this.totalQuestionSeconds;
-    }, 1000);
   }
 
   private clearTimer(): void {
@@ -266,8 +307,117 @@ export class PocketPage implements OnInit, OnDestroy {
   private finishGame(finalScore: number): void {
     this.totalPoints = finalScore;
     this.isGameFinished = true;
+    this.showRankingModal = false;
+    this.clearIntermissionTimers();
     this.clearTimer();
+    this.finalRankingPlayers = [];
+    this.showFinalRankingModal = true;
+    this.loadRanking('final', finalScore);
     this.startFinalCountdownAndRedirect();
+  }
+
+  navigateToGames(): void {
+    this.clearRedirectTimers();
+    this.router.navigate(['/games']);
+  }
+
+  private startInterQuestionModal(nextIndex: number, totalScore: number): void {
+    this.clearIntermissionTimers();
+    this.rankingPlayers = [];
+    this.rankingCountdown = INTERMISSION_SECONDS;
+    this.showRankingModal = true;
+    this.loadRanking('intermission', totalScore);
+
+    this.intermissionCountdownHandle = setInterval(() => {
+      if (this.rankingCountdown > 0) {
+        this.rankingCountdown -= 1;
+      }
+    }, 1000);
+
+    this.intermissionHandle = setTimeout(() => {
+      this.showRankingModal = false;
+      this.clearIntermissionTimers();
+      this.goToNextQuestion(nextIndex);
+    }, INTERMISSION_SECONDS * 1000);
+  }
+
+  private goToNextQuestion(nextIndex: number): void {
+    this.activeIndex = nextIndex;
+    this.activeQuestion = this.questions[this.activeIndex];
+    this.timeLeft = this.totalQuestionSeconds;
+    this.options = [];
+    this.loadOptionsForActiveQuestion();
+  }
+
+  private loadRanking(target: 'intermission' | 'final', fallbackScore: number): void {
+    this.pocketService.getRanking(this.gameSessionId, this.userId).subscribe({
+      next: (response) => {
+        const players = response.success && response.data?.length > 0
+          ? this.mapRankingEntries(response.data)
+          : this.buildMockRanking(fallbackScore);
+
+        if (target === 'final') {
+          this.finalRankingPlayers = players;
+          return;
+        }
+
+        this.rankingPlayers = players;
+      },
+      error: (error) => {
+        console.error('Error loading ranking:', error);
+        const fallbackPlayers = this.buildMockRanking(fallbackScore);
+
+        if (target === 'final') {
+          this.finalRankingPlayers = fallbackPlayers;
+          return;
+        }
+
+        this.rankingPlayers = fallbackPlayers;
+      },
+    });
+  }
+
+  private mapRankingEntries(entries: RankingEntry[]): RankingPlayer[] {
+    return [...entries]
+      .sort((a, b) => a.position - b.position)
+      .map((entry) => ({
+        position: entry.position,
+        name: entry.playerName,
+        points: entry.scorePoints,
+        avatar: (entry.avatarInitial || this.getAvatarInitials(entry.playerName)).toUpperCase(),
+        isCurrentUser: entry.isCurrentUser,
+      }));
+  }
+
+  private buildMockRanking(totalScore: number): RankingPlayer[] {
+    const pool = [
+      { name: 'NeonBlade', points: Math.max(totalScore + 16, 12), isCurrentUser: false },
+      { name: 'CipherFox', points: Math.max(totalScore + 5, 8), isCurrentUser: false },
+      { name: 'TurboLynx', points: Math.max(totalScore - 4, 0), isCurrentUser: false },
+      { name: 'Tu', points: totalScore, isCurrentUser: true },
+    ];
+
+    const sorted = [...pool].sort((a, b) => b.points - a.points);
+    return sorted.map((player, index) => ({
+      position: index + 1,
+      name: player.name,
+      points: player.points,
+      avatar: this.getAvatarInitials(player.name),
+      isCurrentUser: player.isCurrentUser,
+    }));
+  }
+
+  private getAvatarInitials(name: string): string {
+    const initials = name
+      .trim()
+      .split(' ')
+      .filter((part) => part.length > 0)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
+    return initials || 'PL';
   }
 
   private startFinalCountdownAndRedirect(): void {
@@ -294,6 +444,18 @@ export class PocketPage implements OnInit, OnDestroy {
     if (this.redirectCountdownHandle) {
       clearInterval(this.redirectCountdownHandle);
       this.redirectCountdownHandle = null;
+    }
+  }
+
+  private clearIntermissionTimers(): void {
+    if (this.intermissionHandle) {
+      clearTimeout(this.intermissionHandle);
+      this.intermissionHandle = null;
+    }
+
+    if (this.intermissionCountdownHandle) {
+      clearInterval(this.intermissionCountdownHandle);
+      this.intermissionCountdownHandle = null;
     }
   }
 }

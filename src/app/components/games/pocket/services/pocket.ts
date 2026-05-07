@@ -6,6 +6,7 @@ import {
   ApiResponsePocket,
   PocketQuestion,
   PocketQuestionOption,
+  RankingEntry,
   SubmitAnswerData,
   SubmitAnswerRequest,
 } from '../class/IPocket';
@@ -35,6 +36,12 @@ export class PocketService {
     return this.http.post<ApiResponsePocket<SubmitAnswerData>>(
       `${this.gameSessionBaseUrl}/SubmitAnswer`,
       payload,
+    );
+  }
+
+  getRanking(gameSessionId: string, userId: string): Observable<ApiResponsePocket<RankingEntry[]>> {
+    return this.http.get<ApiResponsePocket<RankingEntry[]>>(
+      `${this.gameSessionBaseUrl}/${gameSessionId}/ranking?userId=${userId}`,
     );
   }
 }

@@ -5,6 +5,7 @@ import { environment } from 'src/environments/environment';
 import {
   ActiveGameSession,
   ApiResponseGames,
+  GameSessionLobbyPlayer,
   JoinGameSessionData,
 } from '../class/IGames';
 
@@ -32,6 +33,22 @@ export class GamesService {
         gameSessionId,
         userId,
       }
+    );
+  }
+
+  cancelLobby(gameSessionId: string, userId: string): Observable<ApiResponseGames<JoinGameSessionData>> {
+    return this.http.post<ApiResponseGames<JoinGameSessionData>>(
+      `${this.gameSessionsUrl}/cancel-lobby`,
+      {
+        gameSessionId,
+        userId,
+      }
+    );
+  }
+
+  getLobbyPlayers(gameSessionId: string): Observable<ApiResponseGames<GameSessionLobbyPlayer[]>> {
+    return this.http.get<ApiResponseGames<GameSessionLobbyPlayer[]>>(
+      `${this.gameSessionsUrl}/${gameSessionId}/lobby-players`
     );
   }
 }

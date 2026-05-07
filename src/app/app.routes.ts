@@ -40,6 +40,11 @@ export const routes: Routes = [
           import('./components/games/pocket/pocket.page').then(m => m.PocketPage),
       },
       {
+        path: 'games/pocket/lobby',
+        loadComponent: () =>
+          import('./components/games/pocket/lobby/pocket-lobby.component').then(m => m.PocketLobbyComponent),
+      },
+      {
         path: 'games/admin',
         loadComponent: () =>
           import('./components/games/games-admin/games-admin.page').then(m => m.GamesAdminPage),

@@ -46,3 +46,17 @@ export interface SubmitAnswerData {
   isGameFinished: boolean;
   nextQuestionId: string | null;
 }
+
+export interface RankingEntry {
+  gameSessionId: string;
+  userId: string;
+  position: number;
+  playerName: string;
+  avatarInitial: string;
+  scorePoints: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  isFinished: boolean;
+  finishedAt: string | null;
+  isCurrentUser: boolean;
+}
