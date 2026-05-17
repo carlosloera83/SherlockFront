@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -8,8 +8,8 @@ import {
   IonInput,
   IonItem,
   IonText,
-  IonIcon,
-  IonSpinner, IonHeader, IonToolbar, IonTitle } from '@ionic/angular/standalone';
+  IonSpinner,
+} from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth';
 import { LoginRequest } from '../class/ILogin';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -19,7 +19,7 @@ import { HttpErrorResponse } from '@angular/common/http';
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
   standalone: true,
-  imports: [IonTitle, IonToolbar, IonHeader, 
+  imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
@@ -28,11 +28,10 @@ import { HttpErrorResponse } from '@angular/common/http';
     IonInput,
     IonButton,
     IonText,
-    IonIcon,
     IonSpinner,
   ],
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
  
 
   private readonly fb = inject(FormBuilder);
@@ -60,6 +59,13 @@ export class LoginPage {
     this.showPassword = !this.showPassword;
   }
 
+  async ngOnInit(): Promise<void> {
+    const hasSession = await this.authService.hasSession();
+    if (hasSession) {
+      await this.router.navigateByUrl('/games', { replaceUrl: true });
+    }
+  }
+
   onSubmit(): void {
     this.errorMessage = '';
 
@@ -84,7 +90,7 @@ export class LoginPage {
 
           const session = await this.authService.getSession();
           console.log('SESSION GUARDADA:', session);
-          this.router.navigateByUrl('/home', { replaceUrl: true });
+          this.router.navigateByUrl('/games', { replaceUrl: true });
           return;
         }
 

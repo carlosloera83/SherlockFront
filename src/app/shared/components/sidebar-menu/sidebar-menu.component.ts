@@ -32,7 +32,7 @@ export class SidebarMenuComponent implements OnInit {
   menuItems: MenuItem[] = [
     {
       title: 'Home',
-      route: '/home',
+      route: '/games',
       icon: 'home-outline',
     },
     {

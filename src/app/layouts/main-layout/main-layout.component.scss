@@ -26,6 +26,10 @@
   display: contents;
 }
 
+:host-context(.ion-page) .layout-body {
+  height: 100%;
+}
+
 // Menú estilos oscuros con header rosa
 ::ng-deep ion-menu {
   --background: #020617;

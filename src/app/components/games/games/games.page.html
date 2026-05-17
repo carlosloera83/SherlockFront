@@ -1,95 +1,214 @@
-<ion-content class="page-content" [fullscreen]="true">
-  <section class="games-shell">
-    <header class="games-header">
-      <p>Explora las partidas activas y entra al modo que mejor se adapte a tu estrategia.</p>
-    </header>
+<ion-content class="lobby-content" [fullscreen]="true">
+  <section class="lobby-shell">
+    <ng-container *ngIf="!isLoading; else loadingState">
+      <div *ngIf="errorMessage && games.length === 0" class="state-center state-center--error">
+        <p>{{ errorMessage }}</p>
+      </div>
 
-    <!-- Loading -->
-    <div *ngIf="isLoading" class="state-center">
-      <ion-spinner name="crescent" color="light"></ion-spinner>
-      <p>Cargando partidas...</p>
-    </div>
-
-    <!-- Error -->
-    <div *ngIf="!isLoading && errorMessage" class="state-center state-center--error">
-      <p>{{ errorMessage }}</p>
-    </div>
-
-    <!-- Empty -->
-    <div *ngIf="!isLoading && !errorMessage && games.length === 0" class="state-center">
-      <p>No hay partidas activas en este momento.</p>
-    </div>
-
-    <!-- Game list -->
-    <div class="games-grid" *ngIf="!isLoading && !errorMessage && games.length > 0">
-      <article
-        class="game-card"
-        *ngFor="let game of games"
-        [class.game-card--winner-flash]="isWinnerFlashing(game.session)"
-        [style.background-image]="game.backgroundImage">
-        <div class="game-card__overlay">
-          <div class="game-card__top">
-            <span class="status-badge"
-              [class.status-badge--warning]="game.statusTone === 'warning'"
-              [class.status-badge--success]="game.statusTone === 'success'"
-              [class.status-badge--neutral]="game.statusTone === 'neutral'">
-              {{ game.status }}
-            </span>
-
-            <div class="game-copy">
-              <h2>{{ game.title }}</h2>
-              <p>{{ game.subtitle }}</p>
-              <p>{{ getSessionInfoText(game.session) }}</p>
-            </div>
-
-            <div class="winner-spotlight">
-              <span class="winner-spotlight__icon" aria-hidden="true">&#127942;</span>
-              <div class="winner-spotlight__copy">
-                <span class="winner-spotlight__label">PRIMER LUGAR</span>
-                <span class="winner-spotlight__name">{{ getWinnerDisplayName(game.session) }}</span>
-              </div>
-              <span class="winner-spotlight__points">{{ getWinnerPoints(game.session) }} PTS</span>
-            </div>
-
-          </div>
-
-          <div class="game-card__bottom">
-            <div class="meta-cluster meta-cluster--left">
-              <div class="meta-item">
-                <span class="meta-glyph meta-glyph--players" aria-hidden="true"></span>
-                <span>{{ game.players }}</span>
-              </div>
-
-              <div class="meta-item">
-                <span class="meta-glyph meta-glyph--energy" aria-hidden="true"></span>
-                <span>{{ game.energy }}</span>
+      <div *ngIf="!errorMessage || games.length > 0" class="lobby-frame">
+        <header class="lobby-topbar">
+          <article class="player-hud player-hud--menu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="player-avatar"
+              aria-label="Abrir menu de usuario"
+              (click)="toggleUserMenu($event)">
+              {{ userInitial }}
+            </button>
+            <div class="player-copy">
+              <p class="player-name">{{ userDisplayName }}</p>
+              <p class="player-role">Detective Master</p>
+              <div class="player-progress">
+                <span [style.width.%]="getProfileProgressPercent()"></span>
               </div>
             </div>
 
-            <div class="meta-cluster meta-cluster--right">
-              <div class="meta-item meta-item--highlight">
-                <span class="meta-glyph meta-glyph--trophy" aria-hidden="true"></span>
-                <span>{{ game.completion }}</span>
-              </div>
+            <div class="topbar-user__menu topbar-user__menu--profile" *ngIf="isUserMenuOpen">
+              <button type="button" (click)="goToProfile($event)">Perfil</button>
+              <button type="button" class="topbar-user__logout" (click)="logout($event)">Salir</button>
+            </div>
+          </article>
 
-              <div class="meta-item meta-item--time">
-                <span class="meta-glyph meta-glyph--time" aria-hidden="true"></span>
-                <span>{{ game.schedule }}</span>
-              </div>
+          <div class="resource-strip">
+            <div class="resource-pill resource-pill--gold">
+              <span>◉</span>
+              <strong>{{ coinsBalance | number }}</strong>
+            </div>
+            <div class="resource-pill resource-pill--gem">
+              <span>◆</span>
+              <strong>{{ diamondBalance | number }}</strong>
             </div>
           </div>
-          <button
-            class="drop-button"
-            [class.drop-button--joined]="game.isUserInGame && !isContinueAction(game.session)"
-            [class.drop-button--ready]="isContinueAction(game.session)"
-            type="button"
-            [style.background]="isContinueAction(game.session) ? 'linear-gradient(90deg, #22c55e 0%, #14b8a6 55%, #0ea5e9 100%)' : (game.isUserInGame ? '#1e293b' : game.ctaGradient)"
-            (click)="openGame(game)"
-            [disabled]="isActionDisabled(game.session) || joiningGameSessionId === game.session.gameSessionId">
-            {{ joiningGameSessionId === game.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(game.session) }}
+
+          <div class="top-actions" (click)="$event.stopPropagation()">
+            <button type="button" class="hud-btn" [attr.aria-label]="isMusicEnabled ? 'Apagar musica' : 'Encender musica'" (click)="toggleBackgroundMusic()">
+              {{ isMusicEnabled ? '🔊' : '🔇' }}
+            </button>
+          </div>
+
+          <article class="friends-card">
+            <p>AMIGOS EN LINEA</p>
+            <div class="friends-avatars">
+              <span *ngFor="let friend of onlineFriends">{{ friend }}</span>
+            </div>
+          </article>
+        </header>
+
+        <div class="lobby-grid" *ngIf="currentGame as active">
+          <aside class="left-rail panel-box">
+            <article class="event-card" [style.background-image]="active.backgroundImage">
+              <p class="event-chip">EVENTO ACTIVO</p>
+              <h2>{{ active.title }}</h2>
+              <p>Resuelve el caso y gana <strong>{{ coinsBalance * 0.06 | number: '1.0-0' }} monedas</strong></p>
+              <small>Termina en {{ eventCountdown }}</small>
+            </article>
+
+            <p class="rail-title">MODOS DE JUEGO</p>
+            <button
+              *ngFor="let game of games"
+              type="button"
+              class="mode-card"
+              [class.mode-card--active]="selectedGameSessionId === game.session.gameSessionId"
+              (click)="selectGame(game)">
+              <div class="mode-card__icon">{{ game.modeIcon }}</div>
+              <div class="mode-card__copy">
+                <p>{{ game.title }}</p>
+                <small>{{ game.players }} · {{ game.difficulty }}</small>
+              </div>
+              <span class="mode-card__badge" [class.mode-card__badge--hard]="game.difficulty === 'Experto'">{{ game.difficulty }}</span>
+            </button>
+            <button type="button" class="see-all-btn">VER TODOS LOS MODOS</button>
+          </aside>
+
+          <main class="center-stage panel-box">
+            <div class="city-bg"></div>
+            <div class="stage-brand">SHERLOCK</div>
+
+            <div class="stage-characters">
+              <div class="character-card character-card--lead">
+                <div class="character-avatar character-avatar--lead"></div>
+                <p>TU</p>
+                <strong>{{ userDisplayName }}</strong>
+                <small>Nivel {{ profileLevel }}</small>
+              </div>
+
+              <div class="character-card character-card--ally">
+                <div class="character-avatar character-avatar--ally"></div>
+                <p>ALIADO</p>
+                <strong>{{ sidebarDetectives[3]?.name || 'Leito448' }}</strong>
+                <small>Nivel {{ profileLevel - 2 > 1 ? profileLevel - 2 : 1 }}</small>
+              </div>
+            </div>
+
+            <div class="stage-footer">
+              <button
+                class="start-btn"
+                type="button"
+                [style.background]="getActionButtonBackground(active)"
+                [disabled]="isActionDisabled(active.session) || joiningGameSessionId === active.session.gameSessionId"
+                (click)="openGame(active)">
+                {{ joiningGameSessionId === active.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(active.session) }}
+              </button>
+              <button type="button" class="team-btn">FORMAR</button>
+            </div>
+
+            <div class="chat-bar">
+              <span>MUNDO</span>
+              <p>{{ worldMessage }}</p>
+            </div>
+
+            <p class="data-hint" *ngIf="dataHintMessage">{{ dataHintMessage }}</p>
+          </main>
+
+          <aside class="right-rail">
+            <article class="panel-box reward-card">
+              <h3>RECOMPENSA DIARIA</h3>
+              <p>Abre tu cofre y gana premios</p>
+              <button type="button">ABRIR</button>
+            </article>
+
+            <article class="panel-box missions-card">
+              <header>
+                <h3>MISIONES DIARIAS</h3>
+                <small>{{ eventCountdown }}</small>
+              </header>
+
+              <div class="mission-row" *ngFor="let mission of missionsMock">
+                <div>
+                  <p>{{ mission.title }}</p>
+                  <small>{{ mission.current }}/{{ mission.goal }}</small>
+                </div>
+                <strong>{{ mission.reward }}</strong>
+                <div class="mission-track">
+                  <span [style.width.%]="getMissionProgress(mission)"></span>
+                </div>
+              </div>
+
+              <button type="button" class="see-all-btn">VER TODAS</button>
+            </article>
+
+            <article class="panel-box ranking-card">
+              <header>
+                <h3>RANKING GLOBAL</h3>
+              </header>
+
+              <div class="rank-row" *ngFor="let player of sidebarDetectives | slice:0:4" [class.rank-row--self]="player.isCurrentUser">
+                <span>{{ player.position }}</span>
+                <p>{{ player.name }}</p>
+                <strong>{{ player.points | number }}</strong>
+              </div>
+            </article>
+          </aside>
+        </div>
+
+        <nav class="bottom-nav panel-box">
+          <button *ngFor="let tab of bottomTabs" type="button" [class.bottom-nav__item--active]="tab.active">
+            <span>{{ tab.icon }}</span>
+            <small>{{ tab.label }}</small>
           </button>
+        </nav>
+      </div>
+    </ng-container>
+
+    <ng-template #loadingState>
+      <div class="state-center">
+        <ion-spinner name="crescent" color="light"></ion-spinner>
+        <p>Cargando partidas...</p>
+      </div>
+    </ng-template>
+
+    <section class="ranking-modal-backdrop" *ngIf="showRankingModal" aria-live="polite">
+      <article class="ranking-modal" role="dialog" aria-modal="true" aria-label="Ranking final">
+        <header class="ranking-modal__header">
+          <h3>{{ rankingSessionTitle }}</h3>
+          <button class="ranking-modal__close" type="button" (click)="closeRankingModal()">Cerrar</button>
+        </header>
+
+        <div class="ranking-modal__body" *ngIf="isRankingLoading">
+          <ion-spinner name="crescent" color="light"></ion-spinner>
+          <p>Cargando ranking...</p>
+        </div>
+
+        <div class="ranking-modal__body" *ngIf="!isRankingLoading && rankingErrorMessage">
+          <p>{{ rankingErrorMessage }}</p>
+        </div>
+
+        <div class="ranking-table" *ngIf="!isRankingLoading && !rankingErrorMessage && rankingPlayers.length > 0">
+          <div class="ranking-row ranking-row--head">
+            <span>Posicion</span>
+            <span>Avatar</span>
+            <span>Nombre</span>
+            <span>Puntos</span>
+          </div>
+
+          <div class="ranking-row" *ngFor="let player of rankingPlayers; trackBy: trackByRankingPosition" [class.ranking-row--current]="player.isCurrentUser">
+            <span class="ranking-position">{{ player.position }}</span>
+            <span class="ranking-avatar">{{ player.avatar }}</span>
+            <span class="ranking-name">{{ player.name }}</span>
+            <span class="ranking-points">{{ player.points }}</span>
+          </div>
         </div>
       </article>
-    </div>
+    </section>
   </section>
 </ion-content>

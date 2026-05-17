@@ -4,6 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { IonContent, IonSpinner } from '@ionic/angular/standalone';
 import { Subscription, firstValueFrom, timeout } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { LoginResponseData } from '../../../auth/class/ILogin';
 import { AuthService } from '../../../auth/services/auth';
 import { ActiveGameSession, GameSessionLobbyPlayer } from '../../class/IGames';
@@ -47,6 +49,7 @@ export class PocketLobbyComponent implements OnInit, OnDestroy {
   private countdownHandle: ReturnType<typeof setInterval> | null = null;
   private readonly simulatedCountdownSeconds = 15;
   private readonly subscriptions = new Subscription();
+  private orientationLocked = false;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -58,6 +61,8 @@ export class PocketLobbyComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
+    await this.forceLandscapeOrientation();
+
     this.currentUser = await this.authService.getSession();
     if (!this.currentUser) {
       this.errorMessage = 'No se encontro la sesion del usuario.';
@@ -100,6 +105,7 @@ export class PocketLobbyComponent implements OnInit, OnDestroy {
   }
 
   async ngOnDestroy(): Promise<void> {
+    await this.releaseOrientationLock();
     this.subscriptions.unsubscribe();
     this.clearCountdown();
 
@@ -108,6 +114,18 @@ export class PocketLobbyComponent implements OnInit, OnDestroy {
     }
 
     await this.gameSessionSignalrService.stop();
+  }
+
+  async ionViewWillEnter(): Promise<void> {
+    await this.forceLandscapeOrientation();
+  }
+
+  async ionViewDidEnter(): Promise<void> {
+    await this.forceLandscapeOrientation();
+  }
+
+  async ionViewWillLeave(): Promise<void> {
+    await this.releaseOrientationLock();
   }
 
   async startGame(): Promise<void> {
@@ -274,12 +292,49 @@ export class PocketLobbyComponent implements OnInit, OnDestroy {
     ]);
   }
 
+  private async forceLandscapeOrientation(): Promise<void> {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await ScreenOrientation.lock({ orientation: 'landscape' });
+      } else {
+        const orientationApi = (window.screen as Screen & { orientation?: { lock?: (type: string) => Promise<void> } }).orientation;
+        if (orientationApi?.lock) {
+          await orientationApi.lock('landscape');
+        }
+      }
+
+      this.orientationLocked = true;
+    } catch (error) {
+      this.orientationLocked = false;
+      console.warn('No se pudo bloquear orientacion horizontal en Lobby.', error);
+    }
+  }
+
+  private async releaseOrientationLock(): Promise<void> {
+    if (!this.orientationLocked) {
+      return;
+    }
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await ScreenOrientation.unlock();
+      } else {
+        const orientationApi = (window.screen as Screen & { orientation?: { unlock?: () => void } }).orientation;
+        orientationApi?.unlock?.();
+      }
+    } catch (error) {
+      console.warn('No se pudo liberar orientacion en Lobby.', error);
+    } finally {
+      this.orientationLocked = false;
+    }
+  }
+
   private buildLobbyPlayersFromApi(
     session: ActiveGameSession,
     players: GameSessionLobbyPlayer[]
   ): LobbyPlayerCard[] {
     const maxPlayers = Math.max(session.maxPlayers, session.currentPlayers, this.requiredPlayers, 1);
-    const rolePool = ['Detective', 'Inspector', 'Analista', 'Agente', 'Perito', 'Cronista'];
+    const rolePool = ['Detective', 'Detective', 'Detective', 'Detective', 'Detective', 'Detective'];
     const everyoneReady = this.hasRequiredPlayers(session);
     const normalizedPlayers = players.slice(0, maxPlayers);
 

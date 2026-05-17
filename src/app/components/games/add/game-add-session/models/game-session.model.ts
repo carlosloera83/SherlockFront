@@ -10,6 +10,29 @@ export interface CreateGameSessionFullRequest {
   options: CreateGameSessionFullOptionRequest[];
 }
 
+export interface CreateGameSessionAiPreviewRequest {
+  prompt: string;
+  numberOfQuestions: number;
+  pointsPerQuestion: number;
+}
+
+export interface AiSessionPreviewOption {
+  optionText: string;
+  isCorrect: boolean;
+}
+
+export interface AiSessionPreviewQuestion {
+  questionText: string;
+  explanation: string;
+  difficultyLevel: number;
+  points: number;
+  options: AiSessionPreviewOption[];
+}
+
+export interface CreateGameSessionAiPreviewResponse {
+  questions: AiSessionPreviewQuestion[];
+}
+
 export interface GameStatusCatalogOption {
   code: string;
   name: string;

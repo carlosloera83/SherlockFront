@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent } from '@ionic/angular/standalone';
+import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 import { AuthService } from 'src/app/components/auth/services/auth';
 import { HeaderComponent } from '../../shared/components/header/header.component';
@@ -25,13 +27,32 @@ import { SidebarMenuComponent } from '../../shared/components/sidebar-menu/sideb
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent implements OnInit, OnDestroy {
   @ViewChild(IonMenu) menu!: IonMenu;
   userName = 'Jugador';
+  isLandscape = false;
+  isGamesRoute = false;
+  private readonly subscriptions = new Subscription();
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+  ) {}
 
   async ngOnInit(): Promise<void> {
+    this.updateOrientationState();
+    this.updateRouteState(this.router.url);
+
+    this.subscriptions.add(
+      this.router.events
+        .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+        .subscribe((event) => {
+          this.updateRouteState(event.urlAfterRedirects);
+        })
+    );
+
+    window.addEventListener('resize', this.onWindowResize);
+
     const session = await this.authService.getSession();
 
     this.userName =
@@ -39,6 +60,15 @@ export class MainLayoutComponent implements OnInit {
       session?.firstName ||
       session?.username ||
       'Jugador';
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+    window.removeEventListener('resize', this.onWindowResize);
+  }
+
+  shouldHideLayoutChrome(): boolean {
+    return this.isLandscape && this.isGamesRoute;
   }
 
   toggleMenu(): void {
@@ -51,5 +81,17 @@ export class MainLayoutComponent implements OnInit {
     if (this.menu) {
       this.menu.close();
     }
+  }
+
+  private readonly onWindowResize = (): void => {
+    this.updateOrientationState();
+  };
+
+  private updateOrientationState(): void {
+    this.isLandscape = window.matchMedia('(orientation: landscape)').matches;
+  }
+
+  private updateRouteState(url: string): void {
+    this.isGamesRoute = url.startsWith('/games');
   }
 }
