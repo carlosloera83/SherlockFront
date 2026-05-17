@@ -2,7 +2,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   firstName: string;
-  lastName: string;
+  lastName: string | null;
   nickName: string;
 }
 

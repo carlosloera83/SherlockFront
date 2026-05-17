@@ -2,9 +2,9 @@
   <div class="register-shell">
     <div class="register-card">
       <div class="brand-block">
-        <img src="assets/icon/favicon.png" alt="Sherlock" class="brand-logo" />
-        <h1>Crear cuenta</h1>
-        <p>Regístrate para comenzar a jugar en Sherlock</p>
+        <img src="assets/Images/LogoSH.png" alt="Sherlock" class="brand-logo" />
+        <h1>Crea tu cuenta</h1>
+        
       </div>
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form" novalidate>
@@ -30,33 +30,6 @@
               }
               @if (firstNameControl.errors?.['maxlength']) {
                 <p>El nombre no puede exceder 50 caracteres.</p>
-              }
-            </ion-text>
-          }
-        </div>
-
-        <div class="field-group">
-          <label for="lastName">Apellido</label>
-          <ion-item lines="none" class="custom-item">
-            <ion-input
-              id="lastName"
-              type="text"
-              formControlName="lastName"
-              placeholder="Tu apellido"
-              autocomplete="family-name">
-            </ion-input>
-          </ion-item>
-
-          @if (lastNameControl.touched && lastNameControl.invalid) {
-            <ion-text color="danger" class="error-text">
-              @if (lastNameControl.errors?.['required']) {
-                <p>El apellido es obligatorio.</p>
-              }
-              @if (lastNameControl.errors?.['minlength']) {
-                <p>El apellido debe tener al menos 2 caracteres.</p>
-              }
-              @if (lastNameControl.errors?.['maxlength']) {
-                <p>El apellido no puede exceder 50 caracteres.</p>
               }
             </ion-text>
           }

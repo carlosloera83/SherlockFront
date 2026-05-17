@@ -66,10 +66,10 @@ export class RegisterPage {
   protected readonly alertMessage = signal('');
   protected readonly registrationSucceeded = signal(false);
 
-  protected readonly registerForm = this.fb.nonNullable.group(
+  protected readonly registerForm = this.fb.group(
     {
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
-      lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+      lastName: [null as string | null],
       nickName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(30)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
       password: [
@@ -140,11 +140,11 @@ export class RegisterPage {
     const formValue = this.registerForm.getRawValue();
 
     const payload: RegisterRequest = {
-      firstName: formValue.firstName.trim(),
-      lastName: formValue.lastName.trim(),
-      nickName: formValue.nickName.trim(),
-      email: formValue.email.trim().toLowerCase(),
-      password: formValue.password,
+      firstName: formValue.firstName?.trim() ?? '',
+      lastName: null,
+      nickName: formValue.nickName?.trim() ?? '',
+      email: formValue.email?.trim().toLowerCase() ?? '',
+      password: formValue.password ?? '',
     };
 
     this.authService.register(payload).subscribe({

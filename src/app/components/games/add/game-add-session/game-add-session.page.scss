@@ -84,6 +84,13 @@ ion-card-title {
   font-size: 1.15rem;
 }
 
+.session-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .panel-subtitle {
   margin: 0.35rem 0 0;
   font-size: 0.84rem;
