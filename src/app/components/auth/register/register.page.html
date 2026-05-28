@@ -194,6 +194,7 @@
     [isOpen]="showAlert()"
     [header]="alertHeader()"
     [message]="alertMessage()"
+    [cssClass]="registrationSucceeded() ? ['register-result-alert', 'register-result-alert--success'] : ['register-result-alert', 'register-result-alert--error']"
     [buttons]="['Aceptar']"
     (didDismiss)="handleAlertDismiss()">
   </ion-alert>

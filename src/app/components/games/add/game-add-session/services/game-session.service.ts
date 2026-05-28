@@ -9,15 +9,16 @@ import {
   GameStatus,
   GameSummary,
 } from '../models/game-session.model';
+import { environment } from '../../../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GameSessionService {
-  private readonly gameSessionFullUrl = 'https://localhost:7143/api/GameSessions/GameSessionFull';
-  private readonly gameSessionPreviewUrl = 'https://localhost:7143/api/GameSessions/PreviewGenerateWithAI';
-  private readonly gamesUrl = 'https://localhost:7143/api/Games';
-  private readonly gameStatusesUrl = 'https://localhost:7143/api/GameStatuses';
+  private readonly gameSessionFullUrl = `${environment.apiUrl}/GameSessions/GameSessionFull`;
+  private readonly gameSessionPreviewUrl = `${environment.apiUrl}/GameSessions/PreviewGenerateWithAI`;
+  private readonly gamesUrl = `${environment.apiUrl}/Games`;
+  private readonly gameStatusesUrl = `${environment.apiUrl}/GameStatuses`;
 
   constructor(private http: HttpClient) {}
 

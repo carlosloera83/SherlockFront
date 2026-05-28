@@ -90,6 +90,8 @@ export class GameAddSessionPage implements OnInit {
     'prompt',
     'numberOfQuestions',
     'pointsPerQuestion',
+    'costGems',
+    'totalGems',
     'sessionDate',
     'startTime',
     'endTime',
@@ -136,6 +138,8 @@ export class GameAddSessionPage implements OnInit {
       prompt: ['', [Validators.required, Validators.minLength(10)]],
       numberOfQuestions: [10, [Validators.required, Validators.min(1), Validators.max(30)]],
       pointsPerQuestion: [10, [Validators.required, Validators.min(1), Validators.max(100)]],
+      costGems: [0, [Validators.required, Validators.min(0)]],
+      totalGems: [0, [Validators.required, Validators.min(0)]],
       sessionDate: [dateOnly, Validators.required],
       startTime: [startTime, Validators.required],
       endTime: [endTime, Validators.required],
@@ -342,6 +346,7 @@ export class GameAddSessionPage implements OnInit {
         tempQuestionId: number;
         questionText: string;
         explanation: string;
+        platformUrl?: string | null;
         difficultyLevel: number;
         questionOrder: number;
         points: number;
@@ -350,6 +355,7 @@ export class GameAddSessionPage implements OnInit {
         tempQuestionId: Number(question.tempQuestionId),
         questionText: question.questionText,
         explanation: question.explanation,
+        platformUrl: question.platformUrl?.trim() || null,
         difficultyLevel: Number(question.difficultyLevel),
         questionOrder: Number(question.questionOrder),
         points: Number(question.points),
@@ -375,6 +381,8 @@ export class GameAddSessionPage implements OnInit {
       sessionDate: raw.sessionDate,
       scheduledStartTime: this.buildIsoDateTime(raw.sessionDate, raw.startTime),
       scheduledEndTime: this.buildIsoDateTime(raw.sessionDate, raw.endTime),
+      costGems: Number(raw.costGems),
+      totalGems: Number(raw.totalGems),
       questions,
       options,
     };
@@ -417,6 +425,7 @@ export class GameAddSessionPage implements OnInit {
           tempQuestionId: [questionIndex + 1, [Validators.required, Validators.min(1)]],
           questionText: [question.questionText, [Validators.required, Validators.minLength(3)]],
           explanation: [question.explanation, [Validators.required, Validators.minLength(3)]],
+          platformUrl: [question.platformUrl || '', [Validators.pattern(/^https?:\/\/.+/i)]],
           difficultyLevel: [question.difficultyLevel, [Validators.required, Validators.min(1)]],
           questionOrder: [questionIndex + 1, [Validators.required, Validators.min(1)]],
           points: [question.points, [Validators.required, Validators.min(1)]],
@@ -438,6 +447,7 @@ export class GameAddSessionPage implements OnInit {
       tempQuestionId: [tempQuestionId, [Validators.required, Validators.min(1)]],
       questionText: ['', [Validators.required, Validators.minLength(3)]],
       explanation: ['', [Validators.required, Validators.minLength(3)]],
+      platformUrl: ['', [Validators.pattern(/^https?:\/\/.+/i)]],
       difficultyLevel: [1, [Validators.required, Validators.min(1)]],
       questionOrder: [tempQuestionId, [Validators.required, Validators.min(1)]],
       points: [10, [Validators.required, Validators.min(0)]],
@@ -495,6 +505,8 @@ export class GameAddSessionPage implements OnInit {
       prompt: '',
       numberOfQuestions: 10,
       pointsPerQuestion: 10,
+      costGems: 0,
+      totalGems: 0,
       sessionDate,
       startTime,
       endTime,

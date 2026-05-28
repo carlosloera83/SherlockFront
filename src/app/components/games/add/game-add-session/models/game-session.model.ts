@@ -6,6 +6,8 @@ export interface CreateGameSessionFullRequest {
   sessionDate: string;
   scheduledStartTime: string;
   scheduledEndTime: string;
+  costGems: number;
+  totalGems: number;
   questions: CreateGameSessionFullQuestionRequest[];
   options: CreateGameSessionFullOptionRequest[];
 }
@@ -24,6 +26,7 @@ export interface AiSessionPreviewOption {
 export interface AiSessionPreviewQuestion {
   questionText: string;
   explanation: string;
+  platformUrl?: string | null;
   difficultyLevel: number;
   points: number;
   options: AiSessionPreviewOption[];
@@ -51,6 +54,7 @@ export interface CreateGameSessionFullQuestionRequest {
   tempQuestionId: number;
   questionText: string;
   explanation: string;
+  platformUrl?: string | null;
   difficultyLevel: number;
   questionOrder: number;
   points: number;

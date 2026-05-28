@@ -8,12 +8,9 @@
       <div *ngIf="!errorMessage || games.length > 0" class="lobby-frame">
         <header class="lobby-topbar">
           <article class="player-hud player-hud--menu" (click)="$event.stopPropagation()">
-            <button
-              type="button"
-              class="player-avatar"
-              aria-label="Abrir menu de usuario"
-              (click)="toggleUserMenu($event)">
-              {{ userInitial }}
+            <button type="button" class="player-avatar" aria-label="Abrir menu de usuario" (click)="toggleUserMenu($event)">
+              <img [src]="profileAvatarUrl" [alt]="userDisplayName" />
+              <span class="player-avatar__lvl">{{ profileLevel }}</span>
             </button>
             <div class="player-copy">
               <p class="player-name">{{ userDisplayName }}</p>
@@ -21,6 +18,7 @@
               <div class="player-progress">
                 <span [style.width.%]="getProfileProgressPercent()"></span>
               </div>
+              <small class="player-progress__text">{{ profileProgress | number }}/{{ profileGoal | number }}</small>
             </div>
 
             <div class="topbar-user__menu topbar-user__menu--profile" *ngIf="isUserMenuOpen">
@@ -33,14 +31,21 @@
             <div class="resource-pill resource-pill--gold">
               <span>◉</span>
               <strong>{{ coinsBalance | number }}</strong>
+              <button type="button" class="resource-pill__plus" aria-label="Sumar monedas">+</button>
             </div>
             <div class="resource-pill resource-pill--gem">
               <span>◆</span>
               <strong>{{ diamondBalance | number }}</strong>
+              <button type="button" class="resource-pill__plus" aria-label="Sumar gemas">+</button>
             </div>
           </div>
 
           <div class="top-actions" (click)="$event.stopPropagation()">
+            <button *ngFor="let quick of hudShortcuts" type="button" class="hud-btn hud-btn--quick">
+              <span class="hud-btn__glyph">{{ quick.glyph }}</span>
+              <small>{{ quick.label }}</small>
+              <i *ngIf="quick.badge > 0">{{ quick.badge }}</i>
+            </button>
             <button type="button" class="hud-btn" [attr.aria-label]="isMusicEnabled ? 'Apagar musica' : 'Encender musica'" (click)="toggleBackgroundMusic()">
               {{ isMusicEnabled ? '🔊' : '🔇' }}
             </button>
@@ -49,7 +54,14 @@
           <article class="friends-card">
             <p>AMIGOS EN LINEA</p>
             <div class="friends-avatars">
-              <span *ngFor="let friend of onlineFriends">{{ friend }}</span>
+              <span *ngFor="let friend of onlineFriends" [class.friends-avatars__item--online]="friend.online">
+                <img [src]="friend.avatar" [alt]="friend.name" />
+              </span>
+            </div>
+            <div class="friends-icons">
+              <span>♛</span>
+              <span>▮▮</span>
+              <span>◉</span>
             </div>
           </article>
         </header>
@@ -64,20 +76,7 @@
             </article>
 
             <p class="rail-title">MODOS DE JUEGO</p>
-            <button
-              *ngFor="let game of games"
-              type="button"
-              class="mode-card"
-              [class.mode-card--active]="selectedGameSessionId === game.session.gameSessionId"
-              (click)="selectGame(game)">
-              <div class="mode-card__icon">{{ game.modeIcon }}</div>
-              <div class="mode-card__copy">
-                <p>{{ game.title }}</p>
-                <small>{{ game.players }} · {{ game.difficulty }}</small>
-              </div>
-              <span class="mode-card__badge" [class.mode-card__badge--hard]="game.difficulty === 'Experto'">{{ game.difficulty }}</span>
-            </button>
-            <button type="button" class="see-all-btn">VER TODOS LOS MODOS</button>
+            <p class="ready-counter">Ready para jugar: <strong>{{ readyGames.length }}</strong></p>
           </aside>
 
           <main class="center-stage panel-box">
@@ -100,14 +99,64 @@
               </div>
             </div>
 
+            <section class="ready-carousel" [class.ready-carousel--spinning]="isCarouselAnimating" *ngIf="hasReadyGames; else noReadyGamesState">
+              <button
+                type="button"
+                class="carousel-nav"
+                aria-label="Modo anterior"
+                [disabled]="readyGames.length < 2"
+                (click)="prevReadyGame()">
+                ‹
+              </button>
+
+              <div class="ready-carousel__viewport">
+                <div class="ready-carousel__track" [style.transform]="getReadyCarouselTransform()">
+                  <button
+                    *ngFor="let game of readyGames; trackBy: trackByGameSession"
+                    type="button"
+                    class="mode-card mode-card--carousel"
+                    [style.background-image]="game.backgroundImage"
+                    [class.mode-card--active]="isSelectedReadyGame(game)"
+                    (click)="selectGame(game)">
+                    <div class="mode-card__copy mode-card__copy--event">
+                      <p class="mode-card__event-chip">READY</p>
+                      <p class="mode-card__event-title">{{ game.title }}</p>
+                      <small class="mode-card__event-subtitle">{{ game.subtitle }} · {{ game.players }} · {{ game.difficulty }}</small>
+                      <small class="mode-card__event-time">Inicia {{ game.schedule }}</small>
+                    </div>
+                    <div class="mode-card__icon mode-card__icon--event">
+                      <span>{{ game.modeIcon }}</span>
+                    </div>
+                    <span class="mode-card__badge" [class.mode-card__badge--hard]="game.difficulty === 'Experto'">{{ game.difficulty }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="carousel-nav"
+                aria-label="Siguiente modo"
+                [disabled]="readyGames.length < 2"
+                (click)="nextReadyGame()">
+                ›
+              </button>
+            </section>
+
+            <ng-template #noReadyGamesState>
+              <section class="ready-empty-state">
+                <p>No hay modos en READY por ahora.</p>
+              </section>
+            </ng-template>
+
             <div class="stage-footer">
               <button
                 class="start-btn"
+                [class.start-btn--result]="isResultAction(active.session)"
                 type="button"
                 [style.background]="getActionButtonBackground(active)"
-                [disabled]="isActionDisabled(active.session) || joiningGameSessionId === active.session.gameSessionId"
+                [disabled]="!hasReadyGames || isActionDisabled(active.session) || joiningGameSessionId === active.session.gameSessionId"
                 (click)="openGame(active)">
-                {{ joiningGameSessionId === active.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(active.session) }}
+                {{ !hasReadyGames ? 'SIN MODOS READY' : (joiningGameSessionId === active.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(active.session)) }}
               </button>
               <button type="button" class="team-btn">FORMAR</button>
             </div>
@@ -150,6 +199,7 @@
             <article class="panel-box ranking-card">
               <header>
                 <h3>RANKING GLOBAL</h3>
+                <button type="button">VER MAS</button>
               </header>
 
               <div class="rank-row" *ngFor="let player of sidebarDetectives | slice:0:4" [class.rank-row--self]="player.isCurrentUser">

@@ -276,6 +276,10 @@ ion-card-title {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #7c3aed #18181b;
 }
 
 .question-list-item {

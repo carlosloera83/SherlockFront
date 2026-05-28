@@ -34,7 +34,6 @@ interface GameCard {
   backgroundImage: string;
   isUserInGame: boolean;
   availableSpots: number;
-  isMock: boolean;
   session: ActiveGameSession;
   canUserEnterGame: boolean;
 }
@@ -67,6 +66,18 @@ interface BottomTab {
   active: boolean;
 }
 
+interface OnlineFriend {
+  name: string;
+  avatar: string;
+  online: boolean;
+}
+
+interface HudShortcut {
+  label: string;
+  glyph: string;
+  badge: number;
+}
+
 const TYPE_BACKGROUNDS: Record<string, string> = {
   POCKET:
     "linear-gradient(180deg, rgba(7, 10, 24, 0.2) 0%, rgba(7, 10, 24, 0.86) 100%), url('https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80')",
@@ -95,7 +106,8 @@ export class GamesPage implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   dataHintMessage: string | null = null;
   selectedGameSessionId: string | null = null;
-  usingMockData = false;
+  readyCarouselIndex = 0;
+  isCarouselAnimating = false;
 
   userDisplayName = 'Jugador';
   userInitial = 'J';
@@ -105,7 +117,19 @@ export class GamesPage implements OnInit, OnDestroy {
   profileProgress = 0;
   profileGoal = 10000;
   sidebarDetectives: SidebarDetective[] = [];
-  onlineFriends = ['AX', 'MJ', 'CN', 'LT'];
+  profileAvatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=180&q=80';
+  onlineFriends: OnlineFriend[] = [
+    { name: 'Alex', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80', online: true },
+    { name: 'Mia', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80', online: true },
+    { name: 'Chris', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80', online: true },
+    { name: 'Leito', avatar: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=120&q=80', online: true },
+    { name: 'Nora', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=120&q=80', online: false },
+  ];
+  hudShortcuts: HudShortcut[] = [
+    { label: 'RECOMPENSAS', glyph: 'R', badge: 2 },
+    { label: 'CORREO', glyph: 'M', badge: 1 },
+    { label: 'CONFIG.', glyph: 'C', badge: 0 },
+  ];
   worldMessage = 'DetectiveAna: Alguien para jugar Geografia?';
   eventCountdown = '02:14:22';
   missionsMock: MissionMock[] = [
@@ -125,7 +149,7 @@ export class GamesPage implements OnInit, OnDestroy {
   coinsBalance = 0;
   reportCount = 0;
   trophyScore = 0;
-  isMusicEnabled = true;
+  isMusicEnabled = false;
   isUserMenuOpen = false;
 
   joiningGameSessionId: string | null = null;
@@ -146,6 +170,8 @@ export class GamesPage implements OnInit, OnDestroy {
   private orientationLocked = false;
   private prevWinnerMap = new Map<string, string | null | undefined>();
   private backButtonListener: { remove: () => Promise<void> } | null = null;
+  private readyCarouselTimer: ReturnType<typeof setInterval> | null = null;
+  private readyCarouselAnimationTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private gamesService: GamesService,
@@ -173,6 +199,7 @@ export class GamesPage implements OnInit, OnDestroy {
     this.hydrateUserProfile(session);
     this.currentUserId = session.userId;
     await this.loadGames();
+    this.startReadyCarouselAutoPlay();
 
     try {
       await this.gameSessionsLiveService.startConnection(() => {
@@ -184,6 +211,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   async ngOnDestroy(): Promise<void> {
+    this.stopReadyCarouselAutoPlay();
     this.stopBackgroundMusic();
     await this.releaseOrientationLock();
     await this.gameSessionsLiveService.stopConnection();
@@ -199,6 +227,7 @@ export class GamesPage implements OnInit, OnDestroy {
   async ionViewWillEnter(): Promise<void> {
     await this.forceLandscapeOrientation();
     await this.ensureBackgroundMusicStarted();
+    this.startReadyCarouselAutoPlay();
     if (Capacitor.isNativePlatform()) {
       await StatusBar.hide().catch(() => {});
     }
@@ -215,6 +244,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   async ionViewWillLeave(): Promise<void> {
+    this.stopReadyCarouselAutoPlay();
     this.stopBackgroundMusic();
     this.isUserMenuOpen = false;
     await this.releaseOrientationLock();
@@ -270,13 +300,19 @@ export class GamesPage implements OnInit, OnDestroy {
       );
 
       if (!response.success) {
-        this.injectMockGames(response.message || 'No hay partidas disponibles en este momento.');
+        this.games = [];
+        this.errorMessage = response.message || 'No hay partidas disponibles en este momento.';
+        this.ensureSelectedGame();
+        this.rebuildDashboardMetrics();
         return;
       }
 
       const sessions = Array.isArray(response.data) ? response.data : [];
       if (sessions.length === 0) {
-        this.injectMockGames('Sin datos en vivo por ahora. Se muestran modos de demostración.');
+        this.games = [];
+        this.errorMessage = 'No hay partidas disponibles en este momento.';
+        this.ensureSelectedGame();
+        this.rebuildDashboardMetrics();
         return;
       }
 
@@ -296,12 +332,14 @@ export class GamesPage implements OnInit, OnDestroy {
       });
 
       this.games = newGames;
-      this.usingMockData = false;
       this.ensureSelectedGame();
       this.rebuildDashboardMetrics();
     } catch (error) {
       console.error('Error cargando o mapeando partidas en vivo:', error);
-      this.injectMockGames('Error de conexión en partidas en vivo. Se muestran modos de demostración.');
+      this.games = [];
+      this.errorMessage = 'Error de conexión en partidas en vivo.';
+      this.ensureSelectedGame();
+      this.rebuildDashboardMetrics();
     } finally {
       this.isLoading = false;
     }
@@ -359,7 +397,6 @@ export class GamesPage implements OnInit, OnDestroy {
       backgroundImage: TYPE_BACKGROUNDS[safeSession.gameTypeCode] ?? TYPE_BACKGROUNDS['DEFAULT'],
       isUserInGame: safeSession.isUserInGame,
       availableSpots: safeSession.availableSpots,
-      isMock: false,
       session: safeSession,
       canUserEnterGame: safeSession.canUserEnterGame,
     };
@@ -370,6 +407,15 @@ export class GamesPage implements OnInit, OnDestroy {
       return null;
     }
 
+    const ready = this.readyGames;
+    if (ready.length > 0) {
+      if (!this.selectedGameSessionId) {
+        return ready[0];
+      }
+
+      return ready.find((game) => game.session.gameSessionId === this.selectedGameSessionId) || ready[0];
+    }
+
     if (!this.selectedGameSessionId) {
       return this.games[0];
     }
@@ -377,8 +423,57 @@ export class GamesPage implements OnInit, OnDestroy {
     return this.games.find((game) => game.session.gameSessionId === this.selectedGameSessionId) || this.games[0];
   }
 
+  get readyGames(): GameCard[] {
+    return this.games.filter((game) => this.isReadyGame(game.session));
+  }
+
+  get hasReadyGames(): boolean {
+    return this.readyGames.length > 0;
+  }
+
+  getReadyCarouselTransform(): string {
+    return `translateX(-${this.readyCarouselIndex * 100}%)`;
+  }
+
+  isSelectedReadyGame(game: GameCard): boolean {
+    return this.selectedGameSessionId === game.session.gameSessionId;
+  }
+
+  prevReadyGame(): void {
+    const ready = this.readyGames;
+    if (ready.length < 2) {
+      return;
+    }
+
+    const nextIndex = (this.readyCarouselIndex - 1 + ready.length) % ready.length;
+    this.selectGame(ready[nextIndex]);
+    this.triggerDoorAnimation();
+    this.restartReadyCarouselAutoPlay();
+  }
+
+  nextReadyGame(): void {
+    const ready = this.readyGames;
+    if (ready.length < 2) {
+      return;
+    }
+
+    const nextIndex = (this.readyCarouselIndex + 1) % ready.length;
+    this.selectGame(ready[nextIndex]);
+    this.triggerDoorAnimation();
+    this.restartReadyCarouselAutoPlay();
+  }
+
+  trackByGameSession(_: number, game: GameCard): string {
+    return game.session.gameSessionId;
+  }
+
   selectGame(game: GameCard): void {
+    if (!this.isReadyGame(game.session)) {
+      return;
+    }
+
     this.selectedGameSessionId = game.session.gameSessionId;
+    this.syncReadyCarouselIndex();
     this.rebuildDashboardMetrics();
   }
 
@@ -410,11 +505,6 @@ export class GamesPage implements OnInit, OnDestroy {
   async openGame(game: GameCard): Promise<void> {
     if (!this.currentUserId) {
       this.errorMessage = 'No se encontró sesión de usuario.';
-      return;
-    }
-
-    if (game.isMock) {
-      await this.showInfoMessage('Estas en modo demostracion. Cuando haya partidas en vivo podras entrar.');
       return;
     }
 
@@ -576,6 +666,10 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     return action;
+  }
+
+  isResultAction(session: ActiveGameSession): boolean {
+    return this.getActionLabel(session) === 'Ver resultado';
   }
 
   getSessionInfoText(session: ActiveGameSession): string {
@@ -751,7 +845,7 @@ export class GamesPage implements OnInit, OnDestroy {
   private async confirmJoin(entryCostPoints: number): Promise<boolean> {
     const alert = await this.alertController.create({
       header: 'Entrar al juego',
-      message: `Este juego cuesta ${entryCostPoints} puntos. ¿Quieres gastarlos para unirte?`,
+      message: `Este juego cuesta ${entryCostPoints} Gemas. ¿Quieres gastarlos para unirte?`,
       buttons: [
         {
           text: 'Cancelar',
@@ -950,145 +1044,26 @@ export class GamesPage implements OnInit, OnDestroy {
     this.unlockMusicHandler = null;
   }
 
-  private injectMockGames(reason: string): void {
-    const mockGames = this.buildMockGames();
-    this.games = mockGames;
-    this.usingMockData = true;
-    this.dataHintMessage = reason;
-    this.ensureSelectedGame();
-    this.rebuildDashboardMetrics();
-  }
-
-  private buildMockGames(): GameCard[] {
-    const now = Date.now();
-
-    const sessions: ActiveGameSession[] = [
-      this.createMockSession({
-        gameSessionId: 'mock-duelo-1',
-        gameName: 'Duelo Detectivesco',
-        description: 'Cara a cara contra otro detective.',
-        gameTypeName: 'Arena',
-        gameStatusCode: 'WAITING',
-        gameStatusName: 'Esperando',
-        durationMinutes: 5,
-        minPlayers: 2,
-        maxPlayers: 2,
-        currentPlayers: 1,
-        availableSpots: 1,
-        rewardPercentage: 250,
-        totalPotPoints: 40,
-        sessionDate: new Date(now + 2 * 60000).toISOString(),
-        scheduledStartTime: new Date(now + 2 * 60000).toISOString(),
-        firstPlace: 'MysteryMaster',
-        winnerScorePoints: 15420,
-      }),
-      this.createMockSession({
-        gameSessionId: 'mock-caso-2',
-        gameName: 'Caso Misterioso',
-        description: 'Resuelve el enigma principal.',
-        gameTypeName: 'Pocket',
-        gameStatusCode: 'ACTIVE',
-        gameStatusName: 'Activo',
-        durationMinutes: 12,
-        minPlayers: 1,
-        maxPlayers: 4,
-        currentPlayers: 2,
-        availableSpots: 2,
-        rewardPercentage: 180,
-        totalPotPoints: 25,
-        sessionDate: new Date(now + 12 * 60000).toISOString(),
-        scheduledStartTime: new Date(now + 12 * 60000).toISOString(),
-        firstPlace: 'ClueHunter',
-        winnerScorePoints: 13890,
-      }),
-      this.createMockSession({
-        gameSessionId: 'mock-enigma-3',
-        gameName: 'Enigma Rapido',
-        description: 'Acertijos veloces de precision.',
-        gameTypeName: 'Pocket',
-        gameStatusCode: 'WAITING',
-        gameStatusName: 'Esperando',
-        durationMinutes: 4,
-        minPlayers: 1,
-        maxPlayers: 1,
-        currentPlayers: 1,
-        availableSpots: 0,
-        rewardPercentage: 120,
-        totalPotPoints: 15,
-        sessionDate: new Date(now + 25 * 60000).toISOString(),
-        scheduledStartTime: new Date(now + 25 * 60000).toISOString(),
-        firstPlace: 'EnigmaSolver',
-        winnerScorePoints: 8750,
-      }),
-      this.createMockSession({
-        gameSessionId: 'mock-investiga-4',
-        gameName: 'Investigacion Conjunta',
-        description: 'Modo cooperativo para equipos.',
-        gameTypeName: 'Pocket',
-        gameStatusCode: 'WAITING',
-        gameStatusName: 'Esperando',
-        durationMinutes: 15,
-        minPlayers: 3,
-        maxPlayers: 4,
-        currentPlayers: 3,
-        availableSpots: 1,
-        rewardPercentage: 300,
-        totalPotPoints: 60,
-        sessionDate: new Date(now + 45 * 60000).toISOString(),
-        scheduledStartTime: new Date(now + 45 * 60000).toISOString(),
-        firstPlace: 'PuzzleKing',
-        winnerScorePoints: 8200,
-      }),
-    ];
-
-    return sessions.map((session) => {
-      const card = this.mapSessionToCard(session);
-      card.isMock = true;
-      card.canUserEnterGame = false;
-      card.onlineCount = Math.max(card.onlineCount, 120 + Math.floor(Math.random() * 260));
-      return card;
-    });
-  }
-
-  private createMockSession(partial: Partial<ActiveGameSession>): ActiveGameSession {
-    return {
-      gameSessionId: partial.gameSessionId || `mock-${Date.now()}`,
-      gameId: partial.gameId || partial.gameSessionId || 'mock-game',
-      gameName: partial.gameName || 'Modo Detectivesco',
-      description: partial.description || 'Partida de demostracion',
-      gameTypeCode: partial.gameTypeCode || 'POCKET',
-      gameTypeName: partial.gameTypeName || 'Pocket',
-      entryCostPoints: partial.entryCostPoints ?? partial.totalPotPoints ?? 0,
-      durationMinutes: partial.durationMinutes ?? 5,
-      minPlayers: partial.minPlayers ?? 1,
-      maxPlayers: partial.maxPlayers ?? 2,
-      rewardPercentage: partial.rewardPercentage ?? 150,
-      gameStatusCode: partial.gameStatusCode || 'WAITING',
-      gameStatusName: partial.gameStatusName || 'Esperando',
-      sessionDate: partial.sessionDate || new Date().toISOString(),
-      scheduledStartTime: partial.scheduledStartTime || partial.sessionDate || new Date().toISOString(),
-      scheduledEndTime: partial.scheduledEndTime || '',
-      actualStartTime: partial.actualStartTime ?? null,
-      actualEndTime: partial.actualEndTime ?? null,
-      totalPotPoints: partial.totalPotPoints ?? 0,
-      currentPlayers: partial.currentPlayers ?? 1,
-      availableSpots: partial.availableSpots ?? Math.max(0, (partial.maxPlayers ?? 2) - (partial.currentPlayers ?? 1)),
-      canStart: partial.canStart ?? false,
-      userId: partial.userId || this.currentUserId || 'demo-user',
-      isUserInGame: partial.isUserInGame ?? false,
-      hasUserFinishedGame: partial.hasUserFinishedGame ?? false,
-      canUserEnterGame: partial.canUserEnterGame ?? false,
-      winnerUserId: partial.winnerUserId ?? null,
-      winnerScorePoints: partial.winnerScorePoints ?? null,
-      firstPlace: partial.firstPlace ?? null,
-    };
-  }
-
   private ensureSelectedGame(): void {
+    const ready = this.readyGames;
+    if (ready.length > 0) {
+      const currentReadyExists = ready.some((game) => game.session.gameSessionId === this.selectedGameSessionId);
+      if (!currentReadyExists) {
+        this.selectedGameSessionId = ready[0].session.gameSessionId;
+      }
+
+      this.syncReadyCarouselIndex();
+      this.restartReadyCarouselAutoPlay();
+      return;
+    }
+
     const currentExists = this.games.some((game) => game.session.gameSessionId === this.selectedGameSessionId);
     if (!currentExists) {
       this.selectedGameSessionId = this.games.length > 0 ? this.games[0].session.gameSessionId : null;
     }
+
+    this.readyCarouselIndex = 0;
+    this.stopReadyCarouselAutoPlay();
   }
 
   private hydrateUserProfile(session: LoginResponseData): void {
@@ -1118,8 +1093,8 @@ export class GamesPage implements OnInit, OnDestroy {
     this.reportCount = 40 + this.games.length + Math.floor(totalPlayers / 2);
     this.trophyScore = Math.max(9000, (active.session.winnerScorePoints ?? 9000) + 120);
 
-    this.resolvedCases = Math.max(12, this.games.length * 9 + (this.usingMockData ? 11 : 18));
-    this.currentStreak = Math.max(3, active.session.currentPlayers + (this.usingMockData ? 4 : 6));
+    this.resolvedCases = Math.max(12, this.games.length * 9 + 18);
+    this.currentStreak = Math.max(3, active.session.currentPlayers + 6);
     this.profileLevel = Math.max(5, Math.floor(this.resolvedCases / 3));
     this.profileGoal = 10000;
     this.profileProgress = Math.min(this.profileGoal, this.trophyScore - 700);
@@ -1220,5 +1195,76 @@ export class GamesPage implements OnInit, OnDestroy {
     } finally {
       this.orientationLocked = false;
     }
+  }
+
+  private isReadyGame(session: ActiveGameSession): boolean {
+    const code = (session.gameStatusCode || '').toUpperCase();
+    const name = (session.gameStatusName || '').toUpperCase();
+    return code === 'WAITING' || name === 'READY' || name === 'LISTO';
+  }
+
+  private syncReadyCarouselIndex(): void {
+    const ready = this.readyGames;
+    if (ready.length === 0) {
+      this.readyCarouselIndex = 0;
+      return;
+    }
+
+    const index = ready.findIndex((game) => game.session.gameSessionId === this.selectedGameSessionId);
+    this.readyCarouselIndex = index >= 0 ? index : 0;
+  }
+
+  private startReadyCarouselAutoPlay(): void {
+    if (this.readyCarouselTimer || this.readyGames.length < 2) {
+      return;
+    }
+
+    this.readyCarouselTimer = setInterval(() => {
+      const ready = this.readyGames;
+      if (ready.length < 2) {
+        this.stopReadyCarouselAutoPlay();
+        return;
+      }
+
+      const nextIndex = (this.readyCarouselIndex + 1) % ready.length;
+      this.selectedGameSessionId = ready[nextIndex].session.gameSessionId;
+      this.syncReadyCarouselIndex();
+      this.rebuildDashboardMetrics();
+      this.triggerDoorAnimation();
+    }, 3000);
+  }
+
+  private restartReadyCarouselAutoPlay(): void {
+    this.stopReadyCarouselAutoPlay();
+    this.startReadyCarouselAutoPlay();
+  }
+
+  private stopReadyCarouselAutoPlay(): void {
+    if (this.readyCarouselTimer) {
+      clearInterval(this.readyCarouselTimer);
+      this.readyCarouselTimer = null;
+    }
+
+    if (this.readyCarouselAnimationTimer) {
+      clearTimeout(this.readyCarouselAnimationTimer);
+      this.readyCarouselAnimationTimer = null;
+    }
+  }
+
+  private triggerDoorAnimation(): void {
+    this.isCarouselAnimating = false;
+
+    if (this.readyCarouselAnimationTimer) {
+      clearTimeout(this.readyCarouselAnimationTimer);
+    }
+
+    this.readyCarouselAnimationTimer = setTimeout(() => {
+      this.isCarouselAnimating = true;
+
+      this.readyCarouselAnimationTimer = setTimeout(() => {
+        this.isCarouselAnimating = false;
+        this.readyCarouselAnimationTimer = null;
+      }, 760);
+    }, 10);
   }
 }

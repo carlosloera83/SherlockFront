@@ -7,6 +7,7 @@ export interface PocketQuestion {
   isRequired: boolean;
   questionText: string;
   explanation: string;
+  platformUrl?: string | null;
   difficultyLevel: number;
   isActive: boolean;
   createdAt: string;

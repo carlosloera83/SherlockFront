@@ -1,6 +1,124 @@
 <ion-content class="page-content" [fullscreen]="true">
   <div class="page-shell">
-    <h2>Perfil</h2>
-    <p>Administra tu informacion y preferencias de cuenta.</p>
+    <div *ngIf="loading" class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando perfil...</p>
+    </div>
+
+    <div *ngIf="error && !loading" class="error-container">
+      <p class="error-message">{{ error }}</p>
+    </div>
+
+    <section *ngIf="!loading && !error && userProfile" class="profile-layout">
+      <header class="profile-hero">
+        <div class="profile-hero__frame">
+          <div class="profile-hero__avatar-wrap">
+            <div class="profile-hero__avatar-ring" aria-hidden="true"></div>
+            <img
+              [src]="getAvatarImageUrl()"
+              [alt]="userProfile.nickname || 'Avatar'"
+              class="profile-hero__avatar"
+            />
+            <div class="profile-hero__level-badge">
+              <ion-icon name="medal-outline" aria-hidden="true"></ion-icon>
+              <div>
+                <span>Nivel</span>
+                <strong>{{ levelTierLabel }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-hero__identity">
+            <h1>{{ userProfile.nickname }}</h1>
+            <p class="profile-hero__status" [class.is-active]="userProfile.isActive">
+              <span class="status-dot"></span>
+              {{ userProfile.isActive ? 'ACTIVO' : 'INACTIVO' }}
+            </p>
+            <p class="profile-hero__subtitle">Tu perfil de juego, progresión y acceso</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="stats-grid" aria-label="Resumen del perfil">
+        <article class="stat-card stat-card--points">
+          <div class="stat-card__icon">
+            <ion-icon name="trophy-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <p class="stat-card__label">Puntos</p>
+          <strong class="stat-card__value">{{ displayPoints | number }}</strong>
+          <div class="stat-card__rankings">
+            <div class="rank-pill rank-pill--world">
+              <span>Mundial</span>
+              <strong>#{{ worldRanking | number }}</strong>
+            </div>
+            <div class="rank-pill rank-pill--national">
+              <span>Nacional</span>
+              <strong>#{{ nationalRanking | number }}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="stat-card stat-card--gems">
+          <div class="stat-card__icon">
+            <ion-icon name="diamond-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <p class="stat-card__label">Gemas</p>
+          <strong class="stat-card__value">{{ displayGems | number }}</strong>
+          <div class="stat-card__actions">
+            <button type="button" class="stat-card__action stat-card__action--ghost">Canjear</button>
+            <button type="button" class="stat-card__action stat-card__action--solid">Comprar</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="quick-grid" aria-label="Indicadores de perfil">
+        <article class="mini-card mini-card--energy">
+          <ion-icon name="flash-outline" aria-hidden="true"></ion-icon>
+          <div>
+            <span>Nivel</span>
+            <strong>{{ levelTierLabel }}</strong>
+          </div>
+        </article>
+
+        <article class="mini-card mini-card--rank">
+          <ion-icon name="star-outline" aria-hidden="true"></ion-icon>
+          <div>
+            <span>Rango</span>
+            <strong>{{ userProfile.isActive ? 'A+' : 'B-' }}</strong>
+          </div>
+        </article>
+
+        <article class="mini-card mini-card--status">
+          <ion-icon name="shield-outline" aria-hidden="true"></ion-icon>
+          <div>
+            <span>Miembro desde</span>
+            <strong>{{ memberSinceLabel }}</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="details-panel">
+        <article class="detail-row detail-row--email">
+          <div class="detail-row__icon">
+            <ion-icon name="mail-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="detail-row__body">
+            <span>Email</span>
+            <strong>{{ userProfile.email }}</strong>
+          </div>
+        </article>
+
+        <article class="detail-row detail-row--id">
+          <div class="detail-row__icon">
+            <ion-icon name="person-circle-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="detail-row__body">
+            <span>ID usuario</span>
+            <strong>{{ userProfile.id }}</strong>
+          </div>
+        </article>
+
+      </section>
+    </section>
   </div>
 </ion-content>

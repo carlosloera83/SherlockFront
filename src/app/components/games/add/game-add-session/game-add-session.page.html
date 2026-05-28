@@ -69,6 +69,16 @@
                 <ion-label position="stacked">Puntos por pregunta *</ion-label>
                 <ion-input type="number" formControlName="pointsPerQuestion"></ion-input>
               </ion-item>
+
+              <ion-item class="form-item compact-item">
+                <ion-label position="stacked">Costo en gemas *</ion-label>
+                <ion-input type="number" min="0" formControlName="costGems"></ion-input>
+              </ion-item>
+
+              <ion-item class="form-item compact-item">
+                <ion-label position="stacked">Gemas totales *</ion-label>
+                <ion-input type="number" min="0" formControlName="totalGems"></ion-input>
+              </ion-item>
             </div>
 
             <div class="points-summary">
@@ -207,6 +217,15 @@
             <ion-item class="form-item inline-edit-item">
               <ion-label position="stacked">Explicacion</ion-label>
               <ion-textarea formControlName="explanation" rows="2"></ion-textarea>
+            </ion-item>
+
+            <ion-item class="form-item inline-edit-item">
+              <ion-label position="stacked">URL de plataforma (imagen)</ion-label>
+              <ion-input
+                type="url"
+                formControlName="platformUrl"
+                placeholder="https://plataforma.com/recurso.jpg">
+              </ion-input>
             </ion-item>
 
             <div class="split-grid">

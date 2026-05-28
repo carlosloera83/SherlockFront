@@ -36,12 +36,7 @@ export class GamesAdminPage implements OnInit {
   isSuccess = false;
 
   // Mock game types - replace with actual API call if needed
-  gameTypes = [
-    { id: '3fa85f64-5717-4562-b3fc-2c963f66afa6', name: 'Action' },
-    { id: '3fa85f64-5717-4562-b3fc-2c963f66afa7', name: 'Strategy' },
-    { id: '3fa85f64-5717-4562-b3fc-2c963f66afa8', name: 'Puzzle' },
-  ];
-
+ 
   showForm = false;
 
   constructor(
