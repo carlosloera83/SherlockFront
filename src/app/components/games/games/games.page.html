@@ -1,24 +1,25 @@
 <ion-content class="lobby-content" [fullscreen]="true">
-  <section class="lobby-shell">
+  <section class="lobby-shell combat-shell">
     <ng-container *ngIf="!isLoading; else loadingState">
-      <div *ngIf="errorMessage && games.length === 0" class="state-center state-center--error">
-        <p>{{ errorMessage }}</p>
-      </div>
-
-      <div *ngIf="!errorMessage || games.length > 0" class="lobby-frame">
-        <header class="lobby-topbar">
-          <article class="player-hud player-hud--menu" (click)="$event.stopPropagation()">
-            <button type="button" class="player-avatar" aria-label="Abrir menu de usuario" (click)="toggleUserMenu($event)">
-              <img [src]="profileAvatarUrl" [alt]="userDisplayName" />
-              <span class="player-avatar__lvl">{{ profileLevel }}</span>
+      <div class="combat-frame">
+        <aside class="combat-sidebar">
+          <article class="combat-profile-card" (click)="$event.stopPropagation()">
+            <button type="button" class="combat-profile-card__avatar" (click)="toggleUserMenu($event)">
+              <img
+                class="combat-profile-card__avatar-photo"
+                [src]="profileAvatarUrl"
+                [alt]="userDisplayName"
+                (error)="onProfileAvatarError()" />
+              <span class="combat-profile-card__avatar-initial" *ngIf="profileAvatarHasError">{{ userInitial }}</span>
+              <img class="combat-profile-card__avatar-frame" src="assets/Images/principal/Marco_Dorado2.png" alt="" aria-hidden="true" />
             </button>
-            <div class="player-copy">
-              <p class="player-name">{{ userDisplayName }}</p>
-              <p class="player-role">Detective Master</p>
-              <div class="player-progress">
+
+            <div class="combat-profile-card__copy">
+              <strong>{{ userDisplayName }}</strong>
+              <small>Detective Master</small>
+              <div class="combat-profile-card__progress">
                 <span [style.width.%]="getProfileProgressPercent()"></span>
               </div>
-              <small class="player-progress__text">{{ profileProgress | number }}/{{ profileGoal | number }}</small>
             </div>
 
             <div class="topbar-user__menu topbar-user__menu--profile" *ngIf="isUserMenuOpen">
@@ -27,196 +28,181 @@
             </div>
           </article>
 
-          <div class="resource-strip">
-            <div class="resource-pill resource-pill--gold">
-              <span>◉</span>
-              <strong>{{ coinsBalance | number }}</strong>
-              <button type="button" class="resource-pill__plus" aria-label="Sumar monedas">+</button>
-            </div>
-            <div class="resource-pill resource-pill--gem">
-              <span>◆</span>
-              <strong>{{ diamondBalance | number }}</strong>
-              <button type="button" class="resource-pill__plus" aria-label="Sumar gemas">+</button>
-            </div>
-          </div>
+          <!-- <button type="button" class="combat-sidebar__cta">Juega y Gana</button> -->
 
-          <div class="top-actions" (click)="$event.stopPropagation()">
-            <button *ngFor="let quick of hudShortcuts" type="button" class="hud-btn hud-btn--quick">
-              <span class="hud-btn__glyph">{{ quick.glyph }}</span>
-              <small>{{ quick.label }}</small>
-              <i *ngIf="quick.badge > 0">{{ quick.badge }}</i>
-            </button>
-            <button type="button" class="hud-btn" [attr.aria-label]="isMusicEnabled ? 'Apagar musica' : 'Encender musica'" (click)="toggleBackgroundMusic()">
-              {{ isMusicEnabled ? '🔊' : '🔇' }}
-            </button>
-          </div>
+          <section class="combat-mode-image">
+            <img
+              src="assets/Images/principal/Tipos_De_Juego.png"
+              alt="Tipos de juego"
+              class="combat-mode-image__img" />
+          </section>
 
-          <article class="friends-card">
-            <p>AMIGOS EN LINEA</p>
-            <div class="friends-avatars">
-              <span *ngFor="let friend of onlineFriends" [class.friends-avatars__item--online]="friend.online">
-                <img [src]="friend.avatar" [alt]="friend.name" />
+          <section class="combat-dummy-chat" aria-label="Chat de sala dummy">
+            <img class="combat-dummy-chat__frame" src="assets/Images/principal/Chat.png" alt="" aria-hidden="true" />
+
+            <div class="combat-dummy-chat__content">
+              <!-- <header class="combat-dummy-chat__header">Chat de sala</header> -->
+
+              <div class="combat-dummy-chat__messages">
+                <p><strong>DetectiveAna:</strong> ¿Quien se apunta a Geografia?</p>
+                <p><strong>ClueHunter:</strong> Yo entro en 2 min.</p>
+                <p><strong>MysteryMaster:</strong> Sala lista, vamos.</p>
+              </div>
+
+              <div class="combat-dummy-chat__composer">
+                <input type="text" value="Escribe un mensaje..." readonly aria-label="Mensaje dummy" />
+                <button type="button" disabled>Enviar</button>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <div class="combat-main">
+          <header class="combat-header">
+            <!-- <div class="combat-header__title-wrap">
+              <img src="assets/Images/LogoSH.png" alt="Sherlock" class="combat-header__logo" />
+              <span class="combat-header__hex"></span>
+              <h1>Salas de combate</h1>  
+            </div> -->
+
+            <div class="combat-header__center-wrap" aria-hidden="true">
+              <img src="assets/Images/principal/barraSuperior.png" alt="" class="combat-header__center-bar" />
+            </div>
+
+            <div class="combat-header__status-wrap">
+              <button
+                type="button"
+                class="combat-header__sound combat-header__sound--icon"
+                (click)="toggleBackgroundMusic()"
+                [attr.aria-label]="isMusicEnabled ? 'Desactivar musica' : 'Activar musica'"
+                [title]="isMusicEnabled ? 'Musica encendida' : 'Musica apagada'">
+                <span class="combat-header__sound-icon" aria-hidden="true">&#9835;</span>
+              </button>
+            </div>
+
+            <!-- <div class="combat-header__status-wrap">
+              <span class="combat-header__status" [class.combat-header__status--offline]="!isSignalRConnected()">
+                {{ isSignalRConnected() ? 'En vivo' : 'Sincronizando' }}
               </span>
-            </div>
-            <div class="friends-icons">
-              <span>♛</span>
-              <span>▮▮</span>
-              <span>◉</span>
-            </div>
-          </article>
-        </header>
-
-        <div class="lobby-grid" *ngIf="currentGame as active">
-          <aside class="left-rail panel-box">
-            <article class="event-card" [style.background-image]="active.backgroundImage">
-              <p class="event-chip">EVENTO ACTIVO</p>
-              <h2>{{ active.title }}</h2>
-              <p>Resuelve el caso y gana <strong>{{ coinsBalance * 0.06 | number: '1.0-0' }} monedas</strong></p>
-              <small>Termina en {{ eventCountdown }}</small>
-            </article>
-
-            <p class="rail-title">MODOS DE JUEGO</p>
-            <p class="ready-counter">Ready para jugar: <strong>{{ readyGames.length }}</strong></p>
-          </aside>
-
-          <main class="center-stage panel-box">
-            <div class="city-bg"></div>
-            <div class="stage-brand">SHERLOCK</div>
-
-            <div class="stage-characters">
-              <div class="character-card character-card--lead">
-                <div class="character-avatar character-avatar--lead"></div>
-                <p>TU</p>
-                <strong>{{ userDisplayName }}</strong>
-                <small>Nivel {{ profileLevel }}</small>
-              </div>
-
-              <div class="character-card character-card--ally">
-                <div class="character-avatar character-avatar--ally"></div>
-                <p>ALIADO</p>
-                <strong>{{ sidebarDetectives[3]?.name || 'Leito448' }}</strong>
-                <small>Nivel {{ profileLevel - 2 > 1 ? profileLevel - 2 : 1 }}</small>
-              </div>
-            </div>
-
-            <section class="ready-carousel" [class.ready-carousel--spinning]="isCarouselAnimating" *ngIf="hasReadyGames; else noReadyGamesState">
-              <button
-                type="button"
-                class="carousel-nav"
-                aria-label="Modo anterior"
-                [disabled]="readyGames.length < 2"
-                (click)="prevReadyGame()">
-                ‹
+              <button type="button" class="combat-header__sound" (click)="toggleBackgroundMusic()">
+                {{ isMusicEnabled ? 'Musica on' : 'Musica off' }}
               </button>
+              <article class="combat-online-pill">
+                <span class="combat-online-pill__icon"></span>
+                <strong>{{ onlinePlayersBadgeCount }} jugadores en linea</strong>
+              </article>
+            </div> -->
+          </header>
 
-              <div class="ready-carousel__viewport">
-                <div class="ready-carousel__track" [style.transform]="getReadyCarouselTransform()">
-                  <button
-                    *ngFor="let game of readyGames; trackBy: trackByGameSession"
-                    type="button"
-                    class="mode-card mode-card--carousel"
-                    [style.background-image]="game.backgroundImage"
-                    [class.mode-card--active]="isSelectedReadyGame(game)"
-                    (click)="selectGame(game)">
-                    <div class="mode-card__copy mode-card__copy--event">
-                      <p class="mode-card__event-chip">READY</p>
-                      <p class="mode-card__event-title">{{ game.title }}</p>
-                      <small class="mode-card__event-subtitle">{{ game.subtitle }} · {{ game.players }} · {{ game.difficulty }}</small>
-                      <small class="mode-card__event-time">Inicia {{ game.schedule }}</small>
-                    </div>
-                    <div class="mode-card__icon mode-card__icon--event">
-                      <span>{{ game.modeIcon }}</span>
-                    </div>
-                    <span class="mode-card__badge" [class.mode-card__badge--hard]="game.difficulty === 'Experto'">{{ game.difficulty }}</span>
-                  </button>
-                </div>
+          <div class="combat-layout">
+            <main class="combat-center-panel">
+           
+
+              <div class="combat-welcome-banner">
+                <strong>{{ welcomeBannerText }}</strong>
               </div>
 
-              <button
-                type="button"
-                class="carousel-nav"
-                aria-label="Siguiente modo"
-                [disabled]="readyGames.length < 2"
-                (click)="nextReadyGame()">
-                ›
-              </button>
-            </section>
+              <p class="retro-board-warning" *ngIf="showBoardWarning">
+                {{ errorMessage }} Mostrando salas dummy para continuar con la maqueta.
+              </p>
 
-            <ng-template #noReadyGamesState>
-              <section class="ready-empty-state">
-                <p>No hay modos en READY por ahora.</p>
+              <section class="room-list">
+                <article
+                  *ngFor="let game of featuredGames; trackBy: trackByGameSession"
+                  class="room-card"
+                  [ngClass]="getRoomThemeClass(game)"
+                  [class.room-card--leader-flash]="isWinnerFlashing(game.session)">
+                  <img class="room-card__frame-image" src="/assets/Images/principal/Card_Game_2_1.png" alt="Tarjeta del juego" />
+
+                  <div class="room-card__overlay">
+                    <div class="room-card__header">
+                      <div class="room-card__headline">
+                        <p class="room-card__mode">{{ getRoomCategoryText(game) }}</p>
+                        <h3>{{ game.title }}</h3>
+                      </div>
+                    </div>
+
+                    <div class="room-card__body">
+                        
+                      <div class="room-card__stats">
+                        <div class="room-card__stat">
+                          <strong>{{ getRoomParticipantsText(game) }}</strong>
+                        </div>
+                        <div class="room-card__stat">
+                          <strong>{{ getRoomCountdownText(game) }}</strong>
+                        </div> 
+                        <div class="room-card__stat room-card__stat--cost">
+                          <span>Costo</span>
+                          <strong><span class="room-card__gem-icon">💎</span>{{ getRoomCostGems(game) | number }} gemas</strong>
+                        </div>
+                       
+                        <div class="room-card__stat">
+                          <strong>{{ getWinnerPoints(game.session) | number }} pts</strong>
+                        </div>
+                      </div>
+
+                    
+                        <button
+                          type="button"
+                          class="room-card__enter-btn"
+                          [disabled]="isBoardActionDisabled(game)"
+                          (click)="handleBoardAction(game)">
+                          Entrar
+                        </button>
+                    
+
+                      <p class="room-card__status" *ngIf="getRoomThemeClass(game).includes('disabled')">
+                        {{ getBoardStatusText(game) === 'Lleno' ? 'Sala completa' : 'Partida en curso' }}
+                      </p>
+                    </div>
+
+                    <!-- <div class="room-card__actions">
+                      <small class="room-card__spots">{{ getRoomPlacesText(game) }} libres</small>
+                    </div> -->
+                  </div>
+                </article>
               </section>
-            </ng-template>
+            </main>
 
-            <div class="stage-footer">
-              <button
-                class="start-btn"
-                [class.start-btn--result]="isResultAction(active.session)"
-                type="button"
-                [style.background]="getActionButtonBackground(active)"
-                [disabled]="!hasReadyGames || isActionDisabled(active.session) || joiningGameSessionId === active.session.gameSessionId"
-                (click)="openGame(active)">
-                {{ !hasReadyGames ? 'SIN MODOS READY' : (joiningGameSessionId === active.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(active.session)) }}
-              </button>
-              <button type="button" class="team-btn">FORMAR</button>
-            </div>
+            <aside class="combat-right-panel">
+              <article class="panel-image-card panel-image-card--stats "  >
+                <h3> </h3>
+                <div class="stats-card__row" *ngFor="let stat of playerStats; trackBy: trackByBoardStat" style="padding: 0.5rem 0;"    >
+                  <span>{{ stat.label }}</span>
+                  <strong>{{ stat.value | number }}</strong>
+                </div>
+              </article>
 
-            <div class="chat-bar">
-              <span>MUNDO</span>
+              <!-- <article class="winrate-card">
+                 <small>Tasa de victoria</small>
+                <div class="winrate-card__value-row">
+                  <strong>{{ victoryRate }}%</strong>
+                  <span>WIN RATE</span>
+                </div> 
+                <div class="winrate-card__bar">
+                  <span [style.width.%]="victoryRate"></span>
+                </div>
+              </article>  -->
+
+              <article class="panel-image-card panel-image-card--ranking">
+                <h3> </h3>
+                <div class="mini-ranking-card__row" *ngFor="let player of displayRankingPlayers | slice:0:4" [class.mini-ranking-card__row--self]="player.isCurrentUser">
+                  <span>#{{ player.position }}</span>
+                  <p>{{ player.name }}</p>
+                  <strong>{{ player.points | number }}</strong>
+                </div>
+              </article>
+            </aside>
+          </div>
+
+          <footer class="combat-footer">
+            <div class="world-chat-strip">
+              <span>Mundo</span>
               <p>{{ worldMessage }}</p>
             </div>
-
             <p class="data-hint" *ngIf="dataHintMessage">{{ dataHintMessage }}</p>
-          </main>
-
-          <aside class="right-rail">
-            <article class="panel-box reward-card">
-              <h3>RECOMPENSA DIARIA</h3>
-              <p>Abre tu cofre y gana premios</p>
-              <button type="button">ABRIR</button>
-            </article>
-
-            <article class="panel-box missions-card">
-              <header>
-                <h3>MISIONES DIARIAS</h3>
-                <small>{{ eventCountdown }}</small>
-              </header>
-
-              <div class="mission-row" *ngFor="let mission of missionsMock">
-                <div>
-                  <p>{{ mission.title }}</p>
-                  <small>{{ mission.current }}/{{ mission.goal }}</small>
-                </div>
-                <strong>{{ mission.reward }}</strong>
-                <div class="mission-track">
-                  <span [style.width.%]="getMissionProgress(mission)"></span>
-                </div>
-              </div>
-
-              <button type="button" class="see-all-btn">VER TODAS</button>
-            </article>
-
-            <article class="panel-box ranking-card">
-              <header>
-                <h3>RANKING GLOBAL</h3>
-                <button type="button">VER MAS</button>
-              </header>
-
-              <div class="rank-row" *ngFor="let player of sidebarDetectives | slice:0:4" [class.rank-row--self]="player.isCurrentUser">
-                <span>{{ player.position }}</span>
-                <p>{{ player.name }}</p>
-                <strong>{{ player.points | number }}</strong>
-              </div>
-            </article>
-          </aside>
+          </footer>
         </div>
-
-        <nav class="bottom-nav panel-box">
-          <button *ngFor="let tab of bottomTabs" type="button" [class.bottom-nav__item--active]="tab.active">
-            <span>{{ tab.icon }}</span>
-            <small>{{ tab.label }}</small>
-          </button>
-        </nav>
       </div>
     </ng-container>
 

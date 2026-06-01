@@ -49,6 +49,16 @@ export const routes: Routes = [
           import('./components/games/pocket/lobby/pocket-lobby.component').then(m => m.PocketLobbyComponent),
       },
       {
+        path: 'games/pocket/ranking',
+        loadComponent: () =>
+          import('./components/games/pocket/ranking/pocket-ranking.component').then(m => m.PocketRankingComponent),
+      },
+      {
+        path: 'games/pocket/finalizar',
+        loadComponent: () =>
+          import('./components/games/pocket/finalizar/pocket-finalizar.component').then(m => m.PocketFinalizarComponent),
+      },
+      {
         path: 'games/admin',
         loadComponent: () =>
           import('./components/games/games-admin/games-admin.page').then(m => m.GamesAdminPage),

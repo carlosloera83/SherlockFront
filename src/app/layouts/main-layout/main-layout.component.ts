@@ -32,6 +32,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   userName = 'Jugador';
   isLandscape = false;
   isGamesRoute = false;
+  isPocketRankingRoute = false;
   private readonly subscriptions = new Subscription();
 
   constructor(
@@ -68,7 +69,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   shouldHideLayoutChrome(): boolean {
-    return this.isLandscape && this.isGamesRoute;
+    return this.isPocketRankingRoute || (this.isLandscape && this.isGamesRoute);
   }
 
   toggleMenu(): void {
@@ -93,5 +94,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   private updateRouteState(url: string): void {
     this.isGamesRoute = url.startsWith('/games');
+    this.isPocketRankingRoute = url.startsWith('/games/pocket/ranking');
   }
 }

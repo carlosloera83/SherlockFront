@@ -36,6 +36,7 @@ interface GameCard {
   availableSpots: number;
   session: ActiveGameSession;
   canUserEnterGame: boolean;
+  isPlaceholder?: boolean;
 }
 
 interface RankingModalPlayer {
@@ -78,6 +79,17 @@ interface HudShortcut {
   badge: number;
 }
 
+interface BoardMenuSection {
+  title: string;
+  items: string[];
+  accent: 'purple' | 'gold' | 'lime' | 'blue';
+}
+
+interface BoardStatItem {
+  label: string;
+  value: number;
+}
+
 const TYPE_BACKGROUNDS: Record<string, string> = {
   POCKET:
     "linear-gradient(180deg, rgba(7, 10, 24, 0.2) 0%, rgba(7, 10, 24, 0.86) 100%), url('https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80')",
@@ -101,6 +113,9 @@ const STATUS_GRADIENTS: Record<string, string> = {
   imports: [CommonModule, IonContent, IonSpinner],
 })
 export class GamesPage implements OnInit, OnDestroy {
+  private readonly defaultProfileAvatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=180&q=80';
+  private readonly localProfileAvatarFallback = 'assets/Images/avatares/Avatar_Blank.png';
+
   games: GameCard[] = [];
   isLoading = true;
   errorMessage: string | null = null;
@@ -117,7 +132,8 @@ export class GamesPage implements OnInit, OnDestroy {
   profileProgress = 0;
   profileGoal = 10000;
   sidebarDetectives: SidebarDetective[] = [];
-  profileAvatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=180&q=80';
+  profileAvatarUrl = this.defaultProfileAvatarUrl;
+  profileAvatarHasError = false;
   onlineFriends: OnlineFriend[] = [
     { name: 'Alex', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80', online: true },
     { name: 'Mia', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80', online: true },
@@ -172,6 +188,28 @@ export class GamesPage implements OnInit, OnDestroy {
   private backButtonListener: { remove: () => Promise<void> } | null = null;
   private readyCarouselTimer: ReturnType<typeof setInterval> | null = null;
   private readyCarouselAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly boardMenuSections: BoardMenuSection[] = [
+    {
+      title: 'Selecciona una modalidad',
+      items: [ 'Contra reloj'],
+      accent: 'purple',
+    },
+    // {
+    //   title: 'Sherlock Rankings',
+    //   items: ['Mundial', 'Tu pais', 'Tu ciudad'],
+    //   accent: 'gold',
+    // },
+    // {
+    //   title: 'Sherlock City',
+    //   items: ['Reto semanal'],
+    //   accent: 'lime',
+    // },
+    // {
+    //   title: 'Sherlock Quizard',
+    //   items: [],
+    //   accent: 'blue',
+    // },
+  ];
 
   constructor(
     private gamesService: GamesService,
@@ -346,6 +384,8 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   private mapSessionToCard(s: ActiveGameSession): GameCard {
+    const resolvedCostGems = s.costGems ?? s.entryCostPoints ?? s.totalPotPoints ?? 0;
+
     const safeSession: ActiveGameSession = {
       ...s,
       gameId: s.gameId ?? '',
@@ -353,7 +393,8 @@ export class GamesPage implements OnInit, OnDestroy {
       description: s.description ?? '',
       gameTypeCode: s.gameTypeCode ?? 'POCKET',
       gameTypeName: s.gameTypeName ?? 'Pocket',
-      entryCostPoints: s.totalPotPoints ?? 0,
+      costGems: resolvedCostGems,
+      entryCostPoints: resolvedCostGems,
       durationMinutes: s.durationMinutes ?? 0,
       minPlayers: s.minPlayers ?? 0,
       maxPlayers: s.maxPlayers ?? 0,
@@ -387,7 +428,7 @@ export class GamesPage implements OnInit, OnDestroy {
       modeIcon: this.resolveModeIcon(safeSession),
       modeTag: safeSession.gameTypeName,
       players: `${safeSession.currentPlayers}/${safeSession.maxPlayers}`,
-      energy: String(safeSession.entryCostPoints),
+      energy: String(safeSession.costGems ?? safeSession.entryCostPoints),
       completion: `${safeSession.rewardPercentage}%`,
       schedule: this.formatTime(safeSession.scheduledStartTime),
       difficulty: this.resolveDifficulty(safeSession),
@@ -399,7 +440,75 @@ export class GamesPage implements OnInit, OnDestroy {
       availableSpots: safeSession.availableSpots,
       session: safeSession,
       canUserEnterGame: safeSession.canUserEnterGame,
+      isPlaceholder: false,
     };
+  }
+
+  get displayGames(): GameCard[] {
+    return this.games.length > 0 ? this.games : this.buildPlaceholderGames();
+  }
+
+  get rankingSummary(): { world: number; country: number; city: number } {
+    const world = Math.max(57, 84 - Math.floor(this.profileLevel * 1.7) - (this.games.length * 4));
+    const country = Math.max(33, world - 24);
+    const city = Math.max(11, country - 22);
+
+    return { world, country, city };
+  }
+
+  get playerStats(): BoardStatItem[] {
+    return [
+      { label: 'JJ', value: Math.max(85, this.resolvedCases + 24) },
+      { label: 'JG', value: Math.max(50, this.currentStreak + 38) },
+      { label: 'Puntos', value: Math.max(450, Math.round(this.trophyScore / 20)) },
+      { label: 'Partidas', value: Math.max(80, this.games.length * 16 + 32) },
+      { label: 'Partidas Doradas', value: Math.max(5, Math.floor(this.readyGames.length / 2) + 3) },
+    ];
+  }
+
+  get featuredGames(): GameCard[] {
+    return this.displayGames;
+  }
+
+  get sidebarMenuSections(): BoardMenuSection[] {
+    return this.boardMenuSections;
+  }
+
+  get displayRankingPlayers(): SidebarDetective[] {
+    if (this.sidebarDetectives.length > 0) {
+      return this.sidebarDetectives;
+    }
+
+    return [
+      { position: 1, name: 'MysteryMaster', points: 12840, isCurrentUser: false },
+      { position: 2, name: 'ClueHunter', points: 11760, isCurrentUser: false },
+      { position: 3, name: `${this.userDisplayName} (Tu)`, points: 10890, isCurrentUser: true },
+      { position: 4, name: 'PuzzleKing', points: 10440, isCurrentUser: false },
+    ];
+  }
+
+  get onlineFriendsCount(): number {
+    return this.onlineFriends.filter((friend) => friend.online).length;
+  }
+
+  get onlinePlayersBadgeCount(): number {
+    return Math.max(8, this.onlineFriendsCount + (this.games.length * 2));
+  }
+
+  get victoryRate(): number {
+    return Math.min(92, Math.max(75, 68 + this.readyGames.length * 4 + Math.floor(this.currentStreak / 3)));
+  }
+
+  get welcomeBannerText(): string {
+    return `Bienvenido, ${this.userDisplayName} - Nivel ${this.profileLevel}`;
+  }
+
+  get hasLiveGames(): boolean {
+    return this.games.length > 0;
+  }
+
+  get showBoardWarning(): boolean {
+    return !!this.errorMessage && !this.hasLiveGames;
   }
 
   get currentGame(): GameCard | null {
@@ -467,6 +576,10 @@ export class GamesPage implements OnInit, OnDestroy {
     return game.session.gameSessionId;
   }
 
+  trackByBoardStat(_: number, item: BoardStatItem): string {
+    return item.label;
+  }
+
   selectGame(game: GameCard): void {
     if (!this.isReadyGame(game.session)) {
       return;
@@ -481,6 +594,144 @@ export class GamesPage implements OnInit, OnDestroy {
     return this.isContinueAction(game.session)
       ? 'linear-gradient(90deg, #22c55e 0%, #14b8a6 55%, #0ea5e9 100%)'
       : (game.isUserInGame ? '#1e293b' : game.ctaGradient);
+  }
+
+  isPlaceholderGame(game: GameCard): boolean {
+    return game.isPlaceholder === true;
+  }
+
+  getBoardCardClass(game: GameCard): string {
+    if (this.isPlaceholderGame(game)) {
+      return 'game-room--placeholder';
+    }
+
+    const action = this.getActionLabel(game.session);
+
+    if (action === 'Partida finalizada' || action === 'Cupo lleno') {
+      return 'game-room--closed';
+    }
+
+    return 'game-room--open';
+  }
+
+  getBoardStatusText(game: GameCard): string {
+    if (this.isPlaceholderGame(game)) {
+      return 'Cerrado!';
+    }
+
+    const action = this.getActionLabel(game.session);
+
+    if (action === 'Partida finalizada') {
+      return 'Cerrado!';
+    }
+
+    if (action === 'Cupo lleno') {
+      return 'Lleno';
+    }
+
+    return game.subtitle;
+  }
+
+  getBoardActionText(game: GameCard): string {
+    if (this.isPlaceholderGame(game)) {
+      return 'Proximamente';
+    }
+
+    const action = this.getActionButtonText(game.session);
+    return action === 'Entrar' ? 'Unirme' : action;
+  }
+
+  getRoomThemeClass(game: GameCard): string {
+    const label = `${game.title} ${game.subtitle}`.toUpperCase();
+    const boardClass = this.getBoardCardClass(game);
+
+    if (label.includes('MUNDIAL') || label.includes('RANK')) {
+      return boardClass === 'game-room--open' ? 'room-card--gold' : 'room-card--gold room-card--disabled';
+    }
+
+    if (boardClass === 'game-room--closed' || boardClass === 'game-room--placeholder') {
+      return 'room-card--disabled';
+    }
+
+    return 'room-card--violet';
+  }
+
+  getRoomCategoryText(game: GameCard): string {
+    const label = `${game.title} ${game.subtitle}`.toUpperCase();
+    if (label.includes('MUNDIAL') || label.includes('RANK')) {
+      return 'RANKINGS';
+    }
+
+    return 'POCKET';
+  }
+
+  getRoomParticipantsText(game: GameCard): string {
+    const current = game.session.currentPlayers || this.extractPlayersFromLabel(game.players) || game.session.maxPlayers;
+    const max = game.session.maxPlayers || this.extractPlayersFromLabel(game.players) || current;
+
+    return `${current}/${max}`;
+  }
+
+  getRoomCostGems(game: GameCard): number {
+    return game.session.costGems ?? game.session.entryCostPoints ?? 0;
+  }
+
+  getRoomPrizeGems(game: GameCard): number {
+    if (game.session.totalPotPoints > 0) {
+      return game.session.totalPotPoints;
+    }
+
+    const entryCost = this.getRoomCostGems(game);
+    const players = game.session.maxPlayers || game.session.currentPlayers || 1;
+    return entryCost * players;
+  }
+
+  getRoomCountdownText(game: GameCard): string {
+    const endDate = this.resolveRoomCloseDate(game.session);
+    if (!endDate) {
+      return 'Cierre por definir';
+    }
+
+    const diffMs = endDate.getTime() - Date.now();
+    if (diffMs <= 0) {
+      return 'Cerrada';
+    }
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+    }
+
+    if (minutes > 0) {
+      return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+    }
+
+    return `${seconds}s`;
+  }
+
+  getRoomPlacesText(game: GameCard): number {
+    return game.availableSpots || game.session.availableSpots || game.session.maxPlayers || 0;
+  }
+
+  isBoardActionDisabled(game: GameCard): boolean {
+    if (this.isPlaceholderGame(game)) {
+      return true;
+    }
+
+    return this.isActionDisabled(game.session) || this.joiningGameSessionId === game.session.gameSessionId;
+  }
+
+  async handleBoardAction(game: GameCard): Promise<void> {
+    if (this.isPlaceholderGame(game)) {
+      await this.showInfoMessage('Esta sala es una referencia visual. Estara disponible pronto.');
+      return;
+    }
+
+    await this.openGame(game);
   }
 
   private resolveStatusTone(code: string): 'warning' | 'success' | 'neutral' {
@@ -500,6 +751,30 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  private resolveRoomCloseDate(session: ActiveGameSession): Date | null {
+    if (session.actualEndTime) {
+      const actualEnd = new Date(session.actualEndTime);
+      if (!Number.isNaN(actualEnd.getTime())) {
+        return actualEnd;
+      }
+    }
+
+    const scheduledEnd = new Date(session.scheduledEndTime);
+    const scheduledStart = new Date(session.scheduledStartTime || session.sessionDate);
+    const hasValidEnd = !Number.isNaN(scheduledEnd.getTime());
+    const hasValidStart = !Number.isNaN(scheduledStart.getTime());
+
+    if (hasValidEnd && (!hasValidStart || scheduledEnd.getTime() > scheduledStart.getTime())) {
+      return scheduledEnd;
+    }
+
+    if (hasValidStart && session.durationMinutes > 0) {
+      return new Date(scheduledStart.getTime() + (session.durationMinutes * 60 * 1000));
+    }
+
+    return hasValidEnd ? scheduledEnd : null;
   }
 
   async openGame(game: GameCard): Promise<void> {
@@ -544,7 +819,7 @@ export class GamesPage implements OnInit, OnDestroy {
     if (actionLabel === 'Entrar') {
       this.playEnterSound();
 
-      const accepted = await this.confirmJoin(session.entryCostPoints);
+      const accepted = await this.confirmJoin(session.costGems ?? session.entryCostPoints);
       if (!accepted) {
         return;
       }
@@ -757,7 +1032,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   private navigateToLobby(gameSessionId: string, gameRoute: string): void {
-    this.router.navigate(['/games/pocket/lobby'], {
+    this.router.navigate(['/games/pocket/ranking'], {
       queryParams: {
         gameSessionId,
         gameRoute,
@@ -844,16 +1119,33 @@ export class GamesPage implements OnInit, OnDestroy {
 
   private async confirmJoin(entryCostPoints: number): Promise<boolean> {
     const alert = await this.alertController.create({
-      header: 'Entrar al juego',
-      message: `Este juego cuesta ${entryCostPoints} Gemas. ¿Quieres gastarlos para unirte?`,
+      header: '',
+      message: `
+        <div class="game-join-alert__content">
+          <div class="game-join-alert__icon-wrap">
+            <div class="game-join-alert__icon">💎</div>
+          </div>
+          <h2 class="game-join-alert__title">ENTRAR AL JUEGO</h2>
+          <p class="game-join-alert__lead">Este juego cuesta</p>
+          <div class="game-join-alert__cost-pill">
+            <span class="game-join-alert__cost-icon">💎</span>
+            <strong>${entryCostPoints}</strong>
+            <span>Gemas</span>
+          </div>
+          <p class="game-join-alert__question">¿Quieres gastarlas para unirte?</p>
+        </div>
+      `,
+      cssClass: ['game-join-alert'],
       buttons: [
         {
-          text: 'Cancelar',
+          text: 'CANCELAR',
           role: 'cancel',
+          cssClass: 'game-join-alert__btn game-join-alert__btn--cancel',
         },
         {
-          text: 'Sí, entrar',
+          text: 'SÍ, ENTRAR',
           role: 'confirm',
+          cssClass: 'game-join-alert__btn game-join-alert__btn--confirm',
         },
       ],
     });
@@ -888,6 +1180,74 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     return Math.min(100, Math.round((mission.current / mission.goal) * 100));
+  }
+
+  private buildPlaceholderGames(): GameCard[] {
+    return [
+      this.createPlaceholderGame('dummy-1', 'Eliminatoria', 'Pocket', 13, 5, 'WAITING', 'Lista', 8),
+      this.createPlaceholderGame('dummy-2', 'Puntaje', 'Pocket', 9, 3, 'WAITING', 'Lista', 6),
+      this.createPlaceholderGame('dummy-3', 'Mundial', 'Rankings', 8, 8, 'WAITING', 'Lista', 8),
+      this.createPlaceholderGame('dummy-4', 'Tu Pais', 'Rankings', 6, 2, 'WAITING', 'Lista', 3),
+    ];
+  }
+
+  private createPlaceholderGame(
+    id: string,
+    title: string,
+    subtitle: string,
+    players: number,
+    spots: number,
+    statusCode: string,
+    statusName: string,
+    currentPlayers = players,
+  ): GameCard {
+    const now = new Date();
+    const session: ActiveGameSession = {
+      gameSessionId: id,
+      gameId: id,
+      gameName: title,
+      description: subtitle,
+      gameTypeCode: 'POCKET',
+      gameTypeName: subtitle,
+      costGems: 25,
+      entryCostPoints: 25,
+      durationMinutes: 12,
+      minPlayers: 2,
+      maxPlayers: players,
+      rewardPercentage: statusCode === 'WAITING' ? 220 : 120,
+      gameStatusCode: statusCode,
+      gameStatusName: statusName,
+      sessionDate: now.toISOString(),
+      scheduledStartTime: now.toISOString(),
+      scheduledEndTime: now.toISOString(),
+      actualStartTime: null,
+      actualEndTime: null,
+      totalPotPoints: 200,
+      currentPlayers,
+      availableSpots: spots,
+      canStart: statusCode === 'WAITING' && spots > 0,
+      userId: '',
+      isUserInGame: false,
+      hasUserFinishedGame: false,
+      canUserEnterGame: statusCode === 'WAITING' && spots > 0,
+      winnerUserId: null,
+      winnerScorePoints: null,
+      firstPlace: null,
+    };
+
+    const card = this.mapSessionToCard(session);
+    card.title = title;
+    card.subtitle = subtitle;
+    card.players = `${players}`;
+    card.availableSpots = spots;
+    card.isPlaceholder = true;
+
+    return card;
+  }
+
+  private extractPlayersFromLabel(value: string): number {
+    const match = /^\s*(\d+)/.exec(value || '');
+    return match ? Number(match[1]) : 0;
   }
 
   private playEnterSound(): void {
@@ -1067,8 +1427,34 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   private hydrateUserProfile(session: LoginResponseData): void {
+    const avatarSession = session as LoginResponseData & {
+      avatarUrl?: string;
+      profileImageUrl?: string;
+      imageUrl?: string;
+      photoUrl?: string;
+      avatar?: string;
+    };
+    const resolvedAvatar = [
+      avatarSession.avatarUrl,
+      avatarSession.profileImageUrl,
+      avatarSession.imageUrl,
+      avatarSession.photoUrl,
+      avatarSession.avatar,
+    ].find((value) => typeof value === 'string' && value.trim().length > 0)?.trim();
+
     this.userDisplayName = session.nickName || session.firstName || session.username || 'Jugador';
     this.userInitial = this.getAvatarInitials(this.userDisplayName).slice(0, 1) || 'J';
+    this.profileAvatarHasError = false;
+    this.profileAvatarUrl = resolvedAvatar ?? this.defaultProfileAvatarUrl;
+  }
+
+  onProfileAvatarError(): void {
+    if (this.profileAvatarUrl !== this.localProfileAvatarFallback) {
+      this.profileAvatarUrl = this.localProfileAvatarFallback;
+      return;
+    }
+
+    this.profileAvatarHasError = true;
   }
 
   private rebuildDashboardMetrics(): void {

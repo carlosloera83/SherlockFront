@@ -188,45 +188,7 @@
         </article>
 
         <!-- ── Ranking sidebar (bottom-right) ───────────── -->
-        <aside class="ranking-sidebar" aria-live="polite"
-          [attr.aria-label]="showFinalRankingModal ? 'Ranking final' : 'Ranking en vivo'">
-
-        <ng-container *ngIf="showFinalRankingModal; else liveRankingSidebar">
-
-          <header class="rank-header">
-            <div class="rank-header__title">
-              <span class="rank-trophy" aria-hidden="true">🏆</span>
-              <h3>CLASIFICACIÓN</h3>
-            </div>
-            <span class="rank-final-badge">FINAL</span>
-          </header>
-
-          <p class="rank-final-score">Tu puntaje: <strong>{{ totalPoints }} pts</strong></p>
-
-          <div class="rank-list" *ngIf="finalRankingPlayers.length > 0; else finalLoadingState">
-            <div class="rank-item"
-              *ngFor="let player of finalRankingPlayers"
-              [class.rank-item--leader]="player.position === 1"
-              [class.rank-item--me]="player.isCurrentUser">
-              <span class="rank-medal">{{ getMedalIcon(player.position) }}</span>
-              <span class="rank-avatar" [class.rank-avatar--gold]="player.position === 1">{{ player.avatar }}</span>
-              <span class="rank-name">{{ player.name }}</span>
-              <span class="rank-points">{{ player.points }}</span>
-            </div>
-          </div>
-
-          <ng-template #finalLoadingState>
-            <div class="ranking-empty">Cargando ranking final...</div>
-          </ng-template>
-
-          <footer class="rank-footer">
-            <p class="rank-redirect">Redirigiendo en {{ redirectSecondsLeft }}s...</p>
-            <button class="btn-finalizar" type="button" (click)="navigateToGames()">Finalizar</button>
-          </footer>
-
-        </ng-container>
-
-        <ng-template #liveRankingSidebar>
+        <aside class="ranking-sidebar" aria-live="polite" aria-label="Ranking en vivo">
 
           <header class="rank-header">
             <div class="rank-header__title">
@@ -265,8 +227,6 @@
               Responder en los primeros <strong>5 segundos</strong> otorga <strong>×2 puntos</strong>.
             </p>
           </div>
-
-        </ng-template>
 
         </aside>
 

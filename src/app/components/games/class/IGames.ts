@@ -5,6 +5,7 @@ export interface ActiveGameSession {
   description: string;
   gameTypeCode: string;
   gameTypeName: string;
+  costGems?: number;
   entryCostPoints: number;
   durationMinutes: number;
   minPlayers: number;

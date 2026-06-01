@@ -135,8 +135,11 @@ export class PocketLobbyComponent implements OnInit, OnDestroy {
 
     this.isStarting = true;
     try {
-      await this.router.navigate([this.gameRoute], {
-        queryParams: { gameSessionId: this.session.gameSessionId },
+      await this.router.navigate(['/games/pocket/ranking'], {
+        queryParams: {
+          gameSessionId: this.session.gameSessionId,
+          gameRoute: this.gameRoute,
+        },
       });
     } finally {
       this.isStarting = false;

@@ -1,0 +1,63 @@
+<ion-content class="finalizar-content" [fullscreen]="true" [scrollY]="false" [forceOverscroll]="false">
+  <section class="finalizar-shell">
+    <div class="finalizar-logo-corner" aria-hidden="true">
+      <img src="assets/Images/LogoSH.png" alt="Logo Sherlock" class="finalizar-logo" />
+    </div>
+
+    <header class="finalizar-header">
+      <p class="finalizar-kicker">RESULTADO FINAL</p>
+      <h1>{{ sessionTitle }}</h1>
+      <p class="support-message">{{ supportMessage }}</p>
+    </header>
+
+    <section class="summary-card" *ngIf="!isLoading">
+      <article class="summary-item">
+        <span class="summary-item__label">Puntaje final</span>
+        <span class="summary-item__value">{{ finalScore }} pts</span>
+      </article>
+      <article class="summary-item">
+        <span class="summary-item__label">Tu puesto</span>
+        <span class="summary-item__value">{{ positionLabel }}</span>
+      </article>
+      <article class="summary-item">
+        <span class="summary-item__label">Gemas ganadas</span>
+        <span class="summary-item__value">{{ gemsCount }}</span>
+      </article>
+    </section>
+
+    <section class="ranking-card" *ngIf="isLoading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando resultado y ranking final...</p>
+    </section>
+
+    <section class="ranking-card" *ngIf="!isLoading && errorMessage && rankingPlayers.length === 0">
+      <p>{{ errorMessage }}</p>
+      <small>Intenta volver al inicio y entrar nuevamente a Pocket.</small>
+    </section>
+
+    <section class="ranking-card" *ngIf="!isLoading && rankingPlayers.length > 0">
+      <header class="ranking-card__header">
+        <h2>Ranking final</h2>
+      </header>
+
+      <article
+        class="ranking-row"
+        *ngFor="let player of rankingPlayers; trackBy: trackByPosition"
+        [class.ranking-row--current]="player.isCurrentUser">
+        <span class="ranking-position">#{{ player.position }}</span>
+        <span class="ranking-avatar">{{ player.avatar }}</span>
+        <span class="ranking-name">{{ player.name }}</span>
+        <span class="ranking-points">{{ player.points }} pts</span>
+      </article>
+    </section>
+
+    <footer class="finalizar-actions">
+      <ion-button expand="block" class="btn-games" (click)="goToGames()">
+        Volver a Juegos
+      </ion-button>
+      <ion-button expand="block" fill="outline" class="btn-share" (click)="shareResults()">
+        Compartir en Facebook e Instagram
+      </ion-button>
+    </footer>
+  </section>
+</ion-content>

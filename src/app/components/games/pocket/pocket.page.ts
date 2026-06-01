@@ -623,10 +623,14 @@ export class PocketPage implements OnInit, OnDestroy {
     this.showRankingModal = false;
     this.clearIntermissionTimers();
     this.clearTimer();
-    this.finalRankingPlayers = [];
-    this.showFinalRankingModal = true;
-    this.loadRanking('final', finalScore);
-    this.startFinalCountdownAndRedirect();
+
+    void this.router.navigate(['/games/pocket/finalizar'], {
+      queryParams: {
+        gameSessionId: this.gameSessionId,
+        score: finalScore,
+        sessionName: this.sessionTitle,
+      },
+    });
   }
 
   navigateToGames(): void {
@@ -642,28 +646,18 @@ export class PocketPage implements OnInit, OnDestroy {
     this.loadOptionsForActiveQuestion();
   }
 
-  private loadRanking(target: 'intermission' | 'final', fallbackScore: number): void {
+  private loadRanking(target: 'intermission', fallbackScore: number): void {
     this.pocketService.getRanking(this.gameSessionId, this.userId).subscribe({
       next: (response) => {
         const players = response.success && response.data?.length > 0
           ? this.mapRankingEntries(response.data)
           : this.buildMockRanking(fallbackScore);
 
-        if (target === 'final') {
-          this.finalRankingPlayers = players;
-          return;
-        }
-
         this.rankingPlayers = players;
       },
       error: (error) => {
         console.error('Error loading ranking:', error);
         const fallbackPlayers = this.buildMockRanking(fallbackScore);
-
-        if (target === 'final') {
-          this.finalRankingPlayers = fallbackPlayers;
-          return;
-        }
 
         this.rankingPlayers = fallbackPlayers;
       },
