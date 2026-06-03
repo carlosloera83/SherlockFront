@@ -82,6 +82,7 @@ export class GameAddSessionPage implements OnInit {
   selectedQuestionIndex = 0;
   games: GameSummary[] = [];
   gameStatusOptions: GameStatusCatalogOption[] = [];
+  waitingStatusId = '';
 
   private readonly requiredSessionFields = [
     'gameId',
@@ -219,6 +220,9 @@ export class GameAddSessionPage implements OnInit {
         this.isLoadingGames = false;
         if (response.success) {
           this.games = response.data;
+          if (this.games.length > 0) {
+            this.sessionForm.get('gameId')?.setValue(this.games[0].id);
+          }
         }
       },
       error: () => {
@@ -237,8 +241,12 @@ export class GameAddSessionPage implements OnInit {
         }
 
         this.gameStatusOptions = this.buildStatusOptions(response.data);
+        this.waitingStatusId = this.resolveWaitingStatusId(this.gameStatusOptions);
+
         if (this.gameStatusOptions.length > 0) {
-          this.sessionForm.get('gameStatusId')?.setValue(this.gameStatusOptions[0].value);
+          this.sessionForm
+            .get('gameStatusId')
+            ?.setValue(this.waitingStatusId || this.gameStatusOptions[0].value);
         }
       },
       error: () => {
@@ -253,6 +261,16 @@ export class GameAddSessionPage implements OnInit {
       name: status.name,
       value: status.id,
     }));
+  }
+
+  private resolveWaitingStatusId(statuses: GameStatusCatalogOption[]): string {
+    const waitingStatus = statuses.find(
+      (status) =>
+        status.code?.trim().toLowerCase() === 'waiting' ||
+        status.name?.trim().toLowerCase() === 'waiting'
+    );
+
+    return waitingStatus?.value || '';
   }
 
   private validateSessionData(): boolean {
@@ -375,7 +393,7 @@ export class GameAddSessionPage implements OnInit {
 
     const payload: CreateGameSessionFullRequest = {
       gameId: raw.gameId,
-      gameStatusId: raw.gameStatusId,
+      gameStatusId: this.waitingStatusId || raw.gameStatusId,
       name: raw.gameName,
       description: raw.prompt,
       sessionDate: raw.sessionDate,

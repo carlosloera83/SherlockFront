@@ -37,7 +37,7 @@
 
               <ion-item class="form-item">
                 <ion-label position="stacked">Estatus *</ion-label>
-                <ion-select formControlName="gameStatusId" placeholder="Selecciona un estatus" interface="popover">
+                <ion-select formControlName="gameStatusId" placeholder="Waiting" interface="popover" [disabled]="true">
                   <ion-select-option *ngFor="let status of gameStatusOptions" [value]="status.value">
                     {{ status.name }}
                   </ion-select-option>

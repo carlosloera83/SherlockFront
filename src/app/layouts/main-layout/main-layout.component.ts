@@ -69,7 +69,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   shouldHideLayoutChrome(): boolean {
-    return this.isPocketRankingRoute || (this.isLandscape && this.isGamesRoute);
+    // Games routes render their own HUD; hide app-level header/footer there.
+    return this.isPocketRankingRoute || this.isGamesRoute;
   }
 
   toggleMenu(): void {

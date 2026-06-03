@@ -190,3 +190,277 @@ ion-alert.register-result-alert--error .alert-button .alert-button-inner {
 	color: #fff1f6;
 	text-shadow: 0 0 8px rgba(255, 150, 185, 0.45);
 }
+
+ion-alert.insufficient-gems-alert .alert-message {
+	text-align: center;
+}
+
+ion-alert.insufficient-gems-alert .insufficient-gems-alert__content {
+	display: grid;
+	justify-items: center;
+	gap: 0.6rem;
+}
+
+ion-alert.insufficient-gems-alert .insufficient-gems-alert__sad-face {
+	font-size: 2.4rem;
+	line-height: 1;
+	filter: drop-shadow(0 0 10px rgba(255, 111, 159, 0.42));
+}
+
+ion-alert.insufficient-gems-alert .insufficient-gems-alert__message {
+	margin: 0;
+	color: #ffd7e4;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+}
+
+ion-alert.game-join-alert {
+	--backdrop-opacity: 0.82;
+}
+
+ion-alert.game-join-alert .alert-wrapper {
+	min-width: min(92vw, 540px);
+	max-width: min(92vw, 540px);
+	background:
+		linear-gradient(180deg, rgba(19, 40, 74, 0.98) 0%, rgba(15, 33, 62, 0.98) 100%),
+		radial-gradient(circle at 50% 12%, rgba(255, 198, 0, 0.2), rgba(255, 198, 0, 0) 50%);
+	border: 1px solid rgba(226, 177, 42, 0.65);
+	border-radius: 26px;
+	box-shadow:
+		0 0 0 1px rgba(6, 12, 30, 0.85),
+		0 26px 56px rgba(0, 0, 0, 0.62),
+		0 0 30px rgba(255, 198, 0, 0.14);
+	padding: 16px 16px 14px;
+	color: #f8fbff;
+}
+
+ion-alert.game-join-alert .alert-head {
+	display: none;
+}
+
+ion-alert.game-join-alert .alert-message {
+	padding: 0;
+	margin: 0;
+	color: #d4e4ff;
+}
+
+ion-alert.game-join-alert .game-join-alert__content {
+	display: grid;
+	justify-items: center;
+	text-align: center;
+	gap: 12px;
+	padding: 8px 8px 2px;
+}
+
+ion-alert.game-join-alert .game-join-alert__icon-wrap {
+	width: 138px;
+	height: 138px;
+	border-radius: 30px;
+	background: linear-gradient(160deg, #ffc107 0%, #f6a700 100%);
+	box-shadow:
+		0 12px 26px rgba(245, 159, 11, 0.36),
+		inset 0 1px 0 rgba(255, 245, 194, 0.72);
+	display: grid;
+	place-items: center;
+	transform: rotate(-4deg);
+}
+
+ion-alert.game-join-alert .game-join-alert__icon {
+	font-size: 3.4rem;
+	line-height: 1;
+	transform: rotate(4deg);
+	animation: game-join-gem-float 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+ion-alert.game-join-alert .game-join-alert__title {
+	margin: 4px 0 0;
+	font-size: clamp(1.6rem, 3.8vw, 2.2rem);
+	line-height: 1.1;
+	font-weight: 900;
+	letter-spacing: 0.02em;
+	color: #ffd12f;
+	text-transform: uppercase;
+}
+
+ion-alert.game-join-alert .game-join-alert__lead {
+	margin: 0;
+	font-size: 1.02rem;
+	color: #dce8ff;
+}
+
+ion-alert.game-join-alert .game-join-alert__cost-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 20px;
+	border-radius: 20px;
+	border: 1px solid rgba(255, 192, 45, 0.55);
+	background: linear-gradient(120deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.12));
+	box-shadow: inset 0 1px 0 rgba(255, 241, 175, 0.2);
+	color: #ffd85c;
+}
+
+ion-alert.game-join-alert .game-join-alert__cost-pill strong {
+	font-size: 2.2rem;
+	line-height: 1;
+	font-weight: 900;
+	color: #ffe16d;
+}
+
+ion-alert.game-join-alert .game-join-alert__cost-pill span {
+	font-size: 1.9rem;
+	line-height: 1;
+	font-weight: 700;
+	color: #ffd043;
+}
+
+ion-alert.game-join-alert .game-join-alert__cost-pill .game-join-alert__cost-icon {
+	display: inline-block;
+	animation: game-join-gem-wobble 2.2s ease-in-out infinite;
+	transform-origin: 50% 50%;
+}
+
+ion-alert.game-join-alert .game-join-alert__cost-pill span:last-child {
+	font-size: 2rem;
+	line-height: 1;
+	font-weight: 700;
+	color: #ffd043;
+}
+
+ion-alert.game-join-alert .game-join-alert__question {
+	margin: 2px 0 4px;
+	font-size: 1.05rem;
+	color: #a9c1e7;
+}
+
+ion-alert.game-join-alert .alert-button-group {
+	padding: 12px 0 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+}
+
+ion-alert.game-join-alert .alert-button {
+	margin: 0;
+	border-radius: 16px;
+	min-height: 58px;
+	border: 0;
+	font-weight: 900;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	overflow: hidden;
+	transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+ion-alert.game-join-alert .alert-button .alert-button-inner {
+	font-size: 1.05rem;
+	justify-content: center;
+}
+
+ion-alert.game-join-alert .alert-button.game-join-alert__btn--cancel {
+	background: linear-gradient(180deg, #344867 0%, #2a3d5a 100%);
+	border: 1px solid rgba(144, 173, 214, 0.24);
+	box-shadow: inset 0 1px 0 rgba(151, 180, 220, 0.24);
+}
+
+ion-alert.game-join-alert .alert-button.game-join-alert__btn--cancel .alert-button-inner {
+	color: #e6edf8;
+}
+
+ion-alert.game-join-alert .alert-button.game-join-alert__btn--confirm {
+	background: linear-gradient(180deg, #ffc400 0%, #f7a800 100%);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 238, 165, 0.92),
+		0 8px 22px rgba(247, 168, 0, 0.35);
+}
+
+ion-alert.game-join-alert .alert-button.game-join-alert__btn--confirm .alert-button-inner {
+	color: #151515;
+}
+
+ion-alert.game-join-alert .alert-button:active {
+	transform: translateY(1px);
+	filter: brightness(0.97);
+}
+
+@keyframes game-join-gem-float {
+	0% {
+		transform: rotate(-8deg) translateY(0) scale(1);
+	}
+	25% {
+		transform: rotate(-2deg) translateY(-2px) scale(1.02);
+	}
+	50% {
+		transform: rotate(6deg) translateY(-4px) scale(1.05);
+	}
+	75% {
+		transform: rotate(2deg) translateY(-1px) scale(1.02);
+	}
+	100% {
+		transform: rotate(-8deg) translateY(0) scale(1);
+	}
+}
+
+@keyframes game-join-gem-wobble {
+	0% {
+		transform: rotate(-12deg) scale(1);
+	}
+	25% {
+		transform: rotate(-4deg) scale(1.03);
+	}
+	50% {
+		transform: rotate(12deg) scale(1.08);
+	}
+	75% {
+		transform: rotate(4deg) scale(1.03);
+	}
+	100% {
+		transform: rotate(-12deg) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	ion-alert.game-join-alert .game-join-alert__icon,
+	ion-alert.game-join-alert .game-join-alert__cost-pill .game-join-alert__cost-icon {
+		animation: none;
+	}
+}
+
+@media (max-width: 540px) {
+	ion-alert.game-join-alert .alert-wrapper {
+		border-radius: 20px;
+		padding: 14px 12px 12px;
+	}
+
+	ion-alert.game-join-alert .game-join-alert__icon-wrap {
+		width: 114px;
+		height: 114px;
+		border-radius: 24px;
+	}
+
+	ion-alert.game-join-alert .game-join-alert__icon {
+		font-size: 2.8rem;
+	}
+
+	ion-alert.game-join-alert .game-join-alert__title {
+		font-size: 1.8rem;
+	}
+
+	ion-alert.game-join-alert .game-join-alert__cost-pill {
+		padding: 10px 16px;
+		border-radius: 16px;
+	}
+
+	ion-alert.game-join-alert .game-join-alert__cost-pill strong {
+		font-size: 1.9rem;
+	}
+
+	ion-alert.game-join-alert .game-join-alert__cost-pill span,
+	ion-alert.game-join-alert .game-join-alert__cost-pill span:last-child {
+		font-size: 1.5rem;
+	}
+
+	ion-alert.game-join-alert .alert-button {
+		min-height: 52px;
+	}
+}

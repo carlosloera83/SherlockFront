@@ -3,35 +3,18 @@
 
     <!-- Compact top HUD -->
     <header class="game-hud">
-      <div class="game-hud__brand">
-        <img src="assets/Images/LogoSH.png" alt="Logo Sherlock" class="game-hud__brand-logo" />
-        <span class="game-hud__brand-name">Sherlock</span>
+      <img src="assets/Images/principal/barraSuperior.png" alt="Barra Superior" class="game-hud__banner" />
+      <div class="game-hud__avatar-wrap">
+        <button type="button" class="hud-avatar" (click)="$event.stopPropagation()">
+          <img
+            class="hud-avatar__photo"
+            [src]="profileAvatarUrl"
+            [alt]="userDisplayName"
+            (error)="onProfileAvatarError()" />
+          <span class="hud-avatar__initial" *ngIf="profileAvatarHasError">{{ userInitial }}</span>
+          <img class="hud-avatar__frame" src="assets/Images/principal/Marco_Dorado2.png" alt="" aria-hidden="true" />
+        </button>
       </div>
-
-      <div class="game-hud__stats">
-        <div class="hud-stat">
-          <span class="hud-stat__label">Puntos</span>
-          <span class="hud-stat__value">{{ totalPoints }}</span>
-        </div>
-        <div class="hud-stat">
-          <span class="hud-stat__label">Gemas</span>
-          <span class="hud-stat__value">{{ gemsCount }}</span>
-        </div>
-        <div class="hud-stat">
-          <span class="hud-stat__label">Ranking mundial</span>
-          <span class="hud-stat__value">{{ worldRankingLabel }}</span>
-        </div>
-      </div>
-
-      <button
-        class="music-toggle music-toggle--hud"
-        type="button"
-        (click)="toggleBackgroundMusic()"
-        [attr.aria-pressed]="isBackgroundMusicEnabled"
-        [class.music-toggle--off]="!isBackgroundMusicEnabled">
-        <span class="music-toggle__icon" aria-hidden="true">♫</span>
-        <span>{{ isBackgroundMusicEnabled ? 'MUSICA ON' : 'MUSICA OFF' }}</span>
-      </button>
     </header>
 
     <div *ngIf="isLoading" class="state-center">
@@ -84,10 +67,7 @@
 
           <!-- Topic row + timer circle -->
           <div class="q-header-row">
-            <div class="q-topic">
-              <span class="q-topic__icon" aria-hidden="true">👁</span>
-              <span class="q-topic__label">{{ activeQuestion.explanation }}</span>
-            </div>
+            <div class="q-topic"></div>
             <div class="q-timer" [class.q-timer--urgent]="isQuestionTimerEnabled && timeLeft <= 5">
               <span class="q-timer__value">{{ isQuestionTimerEnabled ? timeLeft : '∞' }}</span>
               <span class="q-timer__unit">SEG</span>

@@ -29,6 +29,12 @@ interface RankingPlayer {
   imports: [CommonModule, IonContent, IonSpinner],
 })
 export class PocketPage implements OnInit, OnDestroy {
+  private readonly defaultProfileAvatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=180&q=80';
+  private readonly localProfileAvatarFallback = 'assets/Images/avatares/Avatar_Blank.png';
+  profileAvatarUrl = this.defaultProfileAvatarUrl;
+  profileAvatarHasError = false;
+  userDisplayName = 'Jugador';
+  userInitial = 'J';
   readonly isQuestionTimerEnabled = false;
   readonly totalQuestionSeconds = 15;
   readonly defaultQuestionPlatformUrl = 'assets/Images/BackGround_Create_user.png';
@@ -102,11 +108,31 @@ export class PocketPage implements OnInit, OnDestroy {
     }
 
     this.userId = session.userId.toUpperCase();
+    const avatarSession = session as any;
+    const resolvedAvatar = [
+      avatarSession.avatarUrl,
+      avatarSession.profileImageUrl,
+      avatarSession.imageUrl,
+      avatarSession.photoUrl,
+      avatarSession.avatar,
+    ].find((v) => typeof v === 'string' && v.trim().length > 0)?.trim();
+    this.userDisplayName = (session as any).nickName || (session as any).firstName || (session as any).username || 'Jugador';
+    this.userInitial = this.userDisplayName.slice(0, 1).toUpperCase() || 'J';
+    this.profileAvatarUrl = resolvedAvatar ?? this.defaultProfileAvatarUrl;
+    this.profileAvatarHasError = false;
     const gameSessionId = this.route.snapshot.queryParamMap.get('gameSessionId') ?? DEFAULT_GAME_SESSION_ID;
     this.gameSessionId = gameSessionId.toUpperCase();
     this.sessionTitle = this.route.snapshot.queryParamMap.get('sessionName') ?? 'Modo Pocket';
     this.loadQuestions(this.gameSessionId);
     this.loadRanking('intermission', this.totalPoints);
+  }
+
+  onProfileAvatarError(): void {
+    if (this.profileAvatarUrl !== this.localProfileAvatarFallback) {
+      this.profileAvatarUrl = this.localProfileAvatarFallback;
+      return;
+    }
+    this.profileAvatarHasError = true;
   }
 
   ngOnDestroy(): void {

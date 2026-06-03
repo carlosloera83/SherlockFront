@@ -6,7 +6,7 @@
 /* ── Base ─────────────────────────────────────────────── */
 
 .pocket-content {
-  --background: #0b0c1a;
+  --background: #000000;
 }
 
 .pocket-content::part(scroll) {
@@ -141,17 +141,75 @@
 /* ── Compact HUD ─────────────────────────────────────── */
 
 .game-hud {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.45rem 0.65rem;
+  padding: 0;
   margin-bottom: 0.55rem;
-  border-radius: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.26);
-  background:
-    linear-gradient(90deg, rgba(9, 14, 38, 0.9), rgba(22, 9, 39, 0.82));
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.1);
+  border-radius: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.game-hud__banner {
+  display: block;
+  width: 30%;
+  height: auto;
+}
+
+.game-hud__avatar-wrap {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.3rem;
+}
+
+.hud-avatar {
+  width: 56px;
+  height: 56px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: #020408;
+  overflow: hidden;
+}
+
+.hud-avatar__photo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  position: relative;
+  z-index: 2;
+  border: 1px solid rgba(129, 157, 205, 0.34);
+}
+
+.hud-avatar__initial {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff8e8;
+  text-transform: uppercase;
+  background: radial-gradient(circle at 30% 30%, #2f3f5a, #162235 70%);
+  border: 1px solid rgba(129, 157, 205, 0.34);
+  z-index: 2;
+}
+
+.hud-avatar__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .game-hud__brand {
@@ -1783,29 +1841,10 @@
 .pocket-content {
   position: relative;
   overflow: hidden;
-  --background:
-    radial-gradient(circle at 50% 8%, rgba(255, 158, 53, 0.08), transparent 40%),
-    linear-gradient(180deg, #000000 0%, #020202 58%, #000000 100%);
 }
 
 .pocket-content::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 50% 42%, transparent 28%, rgba(0, 0, 0, 0.46) 100%),
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.028) 0px,
-      rgba(255, 255, 255, 0.028) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-  opacity: 0.9;
-  mix-blend-mode: screen;
-  animation: cinema-grain-shift 0.7s steps(2, end) infinite;
+  display: none;
 }
 
 .pocket-content::part(scroll) {
@@ -2629,36 +2668,7 @@
 
 .pocket-shell::before,
 .pocket-shell::after {
-  content: '';
-  position: absolute;
-  inset: -14%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.pocket-shell::before {
-  background:
-    radial-gradient(circle at 12% 28%, rgba(249, 115, 22, 0.56), transparent 24%),
-    radial-gradient(circle at 82% 18%, rgba(251, 191, 36, 0.5), transparent 28%),
-    radial-gradient(circle at 34% 84%, rgba(245, 158, 11, 0.4), transparent 26%),
-    radial-gradient(circle at 62% 42%, rgba(251, 146, 60, 0.34), transparent 24%);
-  filter: blur(20px) saturate(1.26);
-  opacity: 0.92;
-  mix-blend-mode: screen;
-  animation: solar-flare-drift 13s ease-in-out infinite alternate;
-}
-
-.pocket-shell::after {
-  background:
-    linear-gradient(112deg, transparent 24%, rgba(255, 196, 112, 0.22) 48%, transparent 70%),
-    radial-gradient(circle at 72% 64%, rgba(255, 170, 38, 0.48), transparent 26%),
-    radial-gradient(circle at 18% 74%, rgba(251, 146, 60, 0.4), transparent 24%),
-    radial-gradient(circle at 52% 16%, rgba(252, 211, 77, 0.38), transparent 22%),
-    radial-gradient(circle at 42% 52%, rgba(251, 113, 133, 0.22), transparent 18%);
-  filter: blur(28px);
-  opacity: 0.86;
-  mix-blend-mode: screen;
-  animation: solar-flare-pulse 6.5s ease-in-out infinite;
+  display: none;
 }
 
 .pocket-shell > * {

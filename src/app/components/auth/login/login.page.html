@@ -5,6 +5,7 @@
         <img src="assets/Images/LogoSH.png" alt="Sherlock" class="brand-logo" />
         <h1>SHERLOCK</h1>
         <p>Inicia sesión para entrar al juego</p>
+        <small class="login-version">vers {{ appVersion }}</small>
       </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>

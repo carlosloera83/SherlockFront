@@ -13,6 +13,7 @@ import {
 import { AuthService } from '../services/auth';
 import { LoginRequest } from '../class/ILogin';
 import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -58,6 +59,8 @@ export class LoginPage implements OnInit {
   protected togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
   }
+
+  readonly appVersion = environment.version;
 
   async ngOnInit(): Promise<void> {
     const hasSession = await this.authService.hasSession();

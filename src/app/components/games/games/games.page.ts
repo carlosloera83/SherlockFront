@@ -9,6 +9,7 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { StatusBar } from '@capacitor/status-bar';
 import { App } from '@capacitor/app';
 import { GamesService } from '../services/games';
+import { environment } from 'src/environments/environment';
 import { AuthService } from '../../auth/services/auth';
 import { ActiveGameSession, JoinGameSessionMessage } from '../class/IGames';
 import { GameSessionsLiveService } from '../services/game-sessions-live.service';
@@ -219,6 +220,8 @@ export class GamesPage implements OnInit, OnDestroy {
     private gameSessionsLiveService: GameSessionsLiveService,
     private pocketService: PocketService,
   ) {}
+
+  readonly appVersion = environment.version;
 
   async ngOnInit(): Promise<void> {
     await this.forceLandscapeOrientation();
@@ -833,6 +836,11 @@ export class GamesPage implements OnInit, OnDestroy {
         const joinMessage = (response.data?.mensaje || response.message || '') as JoinGameSessionMessage;
 
         if (!response.success) {
+          if (this.isInsufficientGemsMessage(response.message)) {
+            await this.showInsufficientGemsModal(response.message || 'INSUFFICIENT_GEMS');
+            return;
+          }
+
           this.errorMessage = response.message || 'No fue posible procesar la partida.';
           return;
         }
@@ -892,7 +900,13 @@ export class GamesPage implements OnInit, OnDestroy {
 
         await this.loadGames(false);
         this.navigateToLobby(session.gameSessionId, gameRoute);
-      } catch {
+      } catch (error: any) {
+        const apiMessage = error?.error?.message || error?.message || '';
+        if (this.isInsufficientGemsMessage(apiMessage)) {
+          await this.showInsufficientGemsModal(apiMessage || 'INSUFFICIENT_GEMS');
+          return;
+        }
+
         this.errorMessage = 'No fue posible unirte al juego. Intenta de nuevo.';
         return;
       } finally {
@@ -1166,6 +1180,40 @@ export class GamesPage implements OnInit, OnDestroy {
     await alert.onDidDismiss();
   }
 
+  private isInsufficientGemsMessage(message: string | null | undefined): boolean {
+    return (message || '').toUpperCase().includes('INSUFFICIENT_GEMS');
+  }
+
+  private async showInsufficientGemsModal(message: string): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'No tienes gemas suficientes',
+      message: `
+        <div class="insufficient-gems-alert__content">
+          <div class="insufficient-gems-alert__sad-face">☹️</div>
+          <p class="insufficient-gems-alert__message">${message}</p>
+        </div>
+      `,
+      cssClass: ['register-result-alert', 'register-result-alert--error', 'insufficient-gems-alert'],
+      buttons: [
+        {
+          text: '✅ Aceptar',
+          role: 'cancel',
+        },
+        {
+          text: '🛒 Comprar Gemas',
+          role: 'buy-gems',
+        },
+      ],
+    });
+
+    await alert.present();
+    const result = await alert.onDidDismiss();
+
+    if (result.role === 'buy-gems') {
+      await this.router.navigate(['/profile']);
+    }
+  }
+
   isSignalRConnected(): boolean {
     return this.gameSessionsLiveService.isConnected();
   }
@@ -1184,10 +1232,7 @@ export class GamesPage implements OnInit, OnDestroy {
 
   private buildPlaceholderGames(): GameCard[] {
     return [
-      this.createPlaceholderGame('dummy-1', 'Eliminatoria', 'Pocket', 13, 5, 'WAITING', 'Lista', 8),
-      this.createPlaceholderGame('dummy-2', 'Puntaje', 'Pocket', 9, 3, 'WAITING', 'Lista', 6),
-      this.createPlaceholderGame('dummy-3', 'Mundial', 'Rankings', 8, 8, 'WAITING', 'Lista', 8),
-      this.createPlaceholderGame('dummy-4', 'Tu Pais', 'Rankings', 6, 2, 'WAITING', 'Lista', 3),
+      
     ];
   }
 

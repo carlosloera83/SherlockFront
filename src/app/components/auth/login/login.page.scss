@@ -118,6 +118,14 @@ ion-content.login-content {
     color: var(--sherlock-muted);
     font-size: 0.95rem;
   }
+
+  .login-version {
+    display: block;
+    margin-top: 6px;
+    color: var(--sherlock-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
 }
 
 .brand-logo {
