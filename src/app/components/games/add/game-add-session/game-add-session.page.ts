@@ -457,7 +457,18 @@ export class GameAddSessionPage implements OnInit {
   }
 
   private buildIsoDateTime(date: string, time: string): string {
-    return new Date(`${date}T${time}`).toISOString();
+    // Construye una cadena ISO con el offset de zona horaria local
+    // Evita usar toISOString() porque convierte a UTC y puede cambiar
+    // la fecha al día siguiente dependiendo del huso horario.
+    const isoLocal = `${date}T${time}:00`;
+    const dt = new Date(isoLocal);
+    const offsetMinutes = -dt.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absMinutes = Math.abs(offsetMinutes);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const offsetHours = pad(Math.floor(absMinutes / 60));
+    const offsetMins = pad(absMinutes % 60);
+    return `${isoLocal}${sign}${offsetHours}:${offsetMins}`;
   }
 
   private createQuestionGroup(tempQuestionId: number): FormGroup {

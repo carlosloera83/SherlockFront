@@ -61,6 +61,8 @@ export class ProfilePage implements OnInit {
         next: (response) => {
           if (response.success) {
             this.userProfile = response.data;
+            console.log('User profile loaded:', this.userProfile.gems);
+            console.log('User profile loaded:', this.userProfile); 
           } else {
             this.error = response.message || 'Error al cargar el perfil';
           }

@@ -70,6 +70,8 @@
               <img src="assets/Images/principal/barraSuperior.png" alt="" class="combat-header__center-bar" />
             </div>
 
+          
+
             <div class="combat-header__status-wrap">
               <button
                 type="button"
@@ -95,13 +97,38 @@
             </div> -->
           </header>
 
+          <div class="combat-stats-bar combat-stats-bar--hud combat-stats-bar--topright" aria-hidden="true">
+            <div class="combat-stat" aria-hidden="true">
+              <span class="combat-stat__icon">💎</span>
+              <span class="combat-stat__value">{{ gems | number }}</span>
+            </div>
+
+            <div class="combat-stat" aria-hidden="true">
+              <span class="combat-stat__icon">🌐</span>
+              <span class="combat-stat__value">{{ worldRankingPoints | number }} pts</span>
+            </div>
+
+            <div class="combat-stat" aria-hidden="true">
+              <span class="combat-stat__icon">🇲🇽</span>
+              <span class="combat-stat__value">{{ countryRankingPoints | number }} pts</span>
+            </div>
+
+            <div class="combat-stat" aria-hidden="true">
+              <span class="combat-stat__icon">🏆</span>
+              <span class="combat-stat__value">{{ gamesWon }}</span>
+            </div>
+
+            <div class="combat-stat" aria-hidden="true">
+              <span class="combat-stat__icon">🎮</span>
+              <span class="combat-stat__value">{{ gamesPlayed }}</span>
+            </div>
+          </div>
+
           <div class="combat-layout">
             <main class="combat-center-panel">
            
 
-              <div class="combat-welcome-banner">
-                <!-- <strong>{{ welcomeBannerText }}</strong> -->
-              </div>
+          
 
               <p class="retro-board-warning" *ngIf="showBoardWarning">
                 {{ errorMessage }}  
@@ -124,33 +151,40 @@
                     </div>
 
                     <div class="room-card__body">
-                        
                       <div class="room-card__stats">
-                        <div class="room-card__stat">
-                          <strong>{{ getRoomParticipantsText(game) }}</strong>
-                        </div>
-                        <div class="room-card__stat">
-                          <strong>{{ getRoomCountdownText(game) }}</strong>
-                        </div> 
-                        <div class="room-card__stat room-card__stat--cost">
-                          <span>Costo</span>
-                          <strong><span class="room-card__gem-icon">💎</span>{{ getRoomCostGems(game) | number }} gemas</strong>
-                        </div>
-                       
-                        <div class="room-card__stat">
-                          <strong>{{ getWinnerPoints(game.session) | number }} pts</strong>
-                        </div>
+                        <ng-container *ngIf="game.session.canStart; else rankingView">
+                          <div class="room-card__stat">
+                            <strong>{{ getRoomParticipantsText(game) }}</strong>
+                          </div>
+                          <div class="room-card__stat">
+                            <strong>{{ getRoomCountdownText(game) }}</strong>
+                          </div>
+                          <div class="room-card__stat">
+                            <strong>{{ getWinnerPoints(game.session) | number }} pts</strong>
+                          </div>
+                        </ng-container>
+
+                        <ng-template #rankingView>
+                          <div class="room-card__stat room-card__stat--prize">
+                            <span>Premio</span>
+                            <strong>{{ getRoomPrizeGems(game) | number }} 💎</strong>
+                          </div>
+                          <div class="room-card__stat room-card__stat--first">
+                            <span>1º</span>
+                            <strong class="room-card__first-name">{{ getWinnerDisplayName(game.session) }}</strong>
+                            <small class="room-card__first-points">{{ getWinnerPoints(game.session) | number }} pts</small>
+                          </div>
+                        </ng-template>
                       </div>
 
-                    
-                        <button
-                          type="button"
-                          class="room-card__enter-btn"
-                          [disabled]="isBoardActionDisabled(game)"
-                          (click)="handleBoardAction(game)">
-                          Entrar
-                        </button>
-                    
+                      <button
+                        type="button"
+                        class="room-card__enter-btn"
+                        [ngClass]="{ 'room-card__enter-btn--gold': game.session.canUserEnterGame }"
+                        [disabled]="isBoardActionDisabled(game)"
+                        (click)="game.session.canUserEnterGame ? handleBoardAction(game) : (game.session.canStart ? handleBoardAction(game) : openRankingModal(game.session))">
+                        {{ game.session.canUserEnterGame ? 'JUGAR' :  'Ver ranking'  }}
+                      </button>
 
                       <p class="room-card__status" *ngIf="getRoomThemeClass(game).includes('disabled')">
                         {{ getBoardStatusText(game) === 'Lleno' ? 'Sala completa' : 'Partida en curso' }}
@@ -165,35 +199,7 @@
               </section>
             </main>
 
-            <aside class="combat-right-panel">
-              <article class="panel-image-card panel-image-card--stats "  >
-                <h3> </h3>
-                <div class="stats-card__row" *ngFor="let stat of playerStats; trackBy: trackByBoardStat" style="padding: 0.5rem 0;"    >
-                  <span>{{ stat.label }}</span>
-                  <strong>{{ stat.value | number }}</strong>
-                </div>
-              </article>
-
-              <!-- <article class="winrate-card">
-                 <small>Tasa de victoria</small>
-                <div class="winrate-card__value-row">
-                  <strong>{{ victoryRate }}%</strong>
-                  <span>WIN RATE</span>
-                </div> 
-                <div class="winrate-card__bar">
-                  <span [style.width.%]="victoryRate"></span>
-                </div>
-              </article>  -->
-
-              <article class="panel-image-card panel-image-card--ranking">
-                <h3> </h3>
-                <div class="mini-ranking-card__row" *ngFor="let player of displayRankingPlayers | slice:0:4" [class.mini-ranking-card__row--self]="player.isCurrentUser">
-                  <span>#{{ player.position }}</span>
-                  <p>{{ player.name }}</p>
-                  <strong>{{ player.points | number }}</strong>
-                </div>
-              </article>
-            </aside>
+            <!-- right panel removed per UX request -->
           </div>
 
           <footer class="combat-footer">

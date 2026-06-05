@@ -45,7 +45,7 @@
             <ion-icon name="trophy-outline" aria-hidden="true"></ion-icon>
           </div>
           <p class="stat-card__label">Puntos</p>
-          <strong class="stat-card__value">{{ displayPoints | number }}</strong>
+          <strong class="stat-card__value">{{ userProfile.points | number }}</strong>
           <div class="stat-card__rankings">
             <div class="rank-pill rank-pill--world">
               <span>Mundial</span>
@@ -63,7 +63,7 @@
             <ion-icon name="diamond-outline" aria-hidden="true"></ion-icon>
           </div>
           <p class="stat-card__label">Gemas</p>
-          <strong class="stat-card__value">{{ displayGems | number }}</strong>
+          <strong class="stat-card__value">{{ userProfile.gems   }}</strong>
           <div class="stat-card__actions">
             <button type="button" class="stat-card__action stat-card__action--ghost">Canjear</button>
             <button type="button" class="stat-card__action stat-card__action--solid">Comprar</button>

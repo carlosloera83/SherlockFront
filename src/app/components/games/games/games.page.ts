@@ -147,7 +147,7 @@ export class GamesPage implements OnInit, OnDestroy {
     { label: 'CORREO', glyph: 'M', badge: 1 },
     { label: 'CONFIG.', glyph: 'C', badge: 0 },
   ];
-  worldMessage = 'DetectiveAna: Alguien para jugar Geografia?';
+  worldMessage = 'Aqui puede ir un mensaje global para todos los jugadores, como un anuncio de evento o una felicitación por el día.';
   eventCountdown = '02:14:22';
   missionsMock: MissionMock[] = [
     { title: 'Resuelve 3 pistas', current: 2, goal: 3, reward: 50 },
@@ -991,7 +991,7 @@ export class GamesPage implements OnInit, OnDestroy {
 
   getWinnerDisplayName(session: ActiveGameSession): string {
     if (!session.firstPlace) {
-      return 'POR DEFINIR';
+      return 'Por Definir';
     }
 
     const winner = session.firstPlace.trim();
@@ -1072,7 +1072,7 @@ export class GamesPage implements OnInit, OnDestroy {
     });
   }
 
-  private async openRankingModal(session: ActiveGameSession): Promise<void> {
+  public  async openRankingModal(session: ActiveGameSession): Promise<void> {
     if (!this.currentUserId) {
       this.errorMessage = 'No se encontró sesión de usuario.';
       return;
@@ -1220,6 +1220,26 @@ export class GamesPage implements OnInit, OnDestroy {
 
   get diamondBalance(): number {
     return Math.max(9000, this.reportCount * 210);
+  }
+
+  get gems(): number {
+    return this.diamondBalance;
+  }
+
+  get worldRankingPoints(): number {
+    return this.rankingSummary.world;
+  }
+
+  get countryRankingPoints(): number {
+    return this.rankingSummary.country;
+  }
+
+  get gamesWon(): number {
+    return Math.max(0, Math.floor(this.trophyScore / 120));
+  }
+
+  get gamesPlayed(): number {
+    return Math.max(0, Math.max(80, this.games.length * 16 + 32));
   }
 
   getMissionProgress(mission: MissionMock): number {
