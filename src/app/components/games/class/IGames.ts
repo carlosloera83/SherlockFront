@@ -64,6 +64,28 @@ export interface GameSessionLobbyPlayer {
   joinedAt: string;
 }
 
+export interface UserDashboardStats {
+  userId: string;
+  nickname: string;
+  firstName: string;
+  lastName: string;
+  profileImageUrl: string | null;
+  avatarId: string;
+  pathAvatar?: string;
+  totalGems: number;
+  totalPoints: number;
+  globalRank: number;
+  totalGamesPlayed: number;
+  totalGamesWon: number;
+  totalQuestionsAnswered: number;
+  totalCorrectAnswers: number;
+  fastestCompletionSeconds: number;
+  totalGemsEarned: number;
+  winRate: number;
+  correctAnswerRate: number;
+  mensaje?: string;
+}
+
 export type JoinGameSessionMessage =
   | 'USER_JOINED_LOBBY_SUCCESS'
   | 'USER_JOINED_LOBBY_AND_COUNTDOWN_STARTED'

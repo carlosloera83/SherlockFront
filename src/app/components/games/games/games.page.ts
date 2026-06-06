@@ -1,8 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
-import { IonContent, IonSpinner } from '@ionic/angular/standalone';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
+import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import {
+  checkmarkCircleOutline,
+  diamondOutline,
+  gameControllerOutline,
+  helpCircleOutline,
+  podiumOutline,
+  pulseOutline,
+  ribbonOutline,
+  statsChartOutline,
+  trophyOutline,
+} from 'ionicons/icons';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
@@ -11,11 +23,15 @@ import { App } from '@capacitor/app';
 import { GamesService } from '../services/games';
 import { environment } from 'src/environments/environment';
 import { AuthService } from '../../auth/services/auth';
-import { ActiveGameSession, JoinGameSessionMessage } from '../class/IGames';
+import { ActiveGameSession, JoinGameSessionMessage, UserDashboardStats } from '../class/IGames';
 import { GameSessionsLiveService } from '../services/game-sessions-live.service';
 import { RankingEntry } from '../pocket/class/IPocket';
 import { PocketService } from '../pocket/services/pocket';
 import { LoginResponseData } from '../../auth/class/ILogin';
+import { RewardsService } from '../services/rewards.service';
+import { ClaimPendingRewardRequest, PendingRewardDto } from '../class/IRewards';
+import { STORAGE_KEYS } from 'src/app/core/constants/storage.keys';
+import { ProfileService } from '../../features/profile/services/profile.service';
 
 interface GameCard {
   status: string;
@@ -91,6 +107,13 @@ interface BoardStatItem {
   value: number;
 }
 
+interface TopHudStat {
+  key: string;
+  icon: string;
+  label: string;
+  value: string;
+}
+
 const TYPE_BACKGROUNDS: Record<string, string> = {
   POCKET:
     "linear-gradient(180deg, rgba(7, 10, 24, 0.2) 0%, rgba(7, 10, 24, 0.86) 100%), url('https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80')",
@@ -111,11 +134,11 @@ const STATUS_GRADIENTS: Record<string, string> = {
   standalone: true,
   templateUrl: './games.page.html',
   styleUrls: ['./games.page.scss'],
-  imports: [CommonModule, IonContent, IonSpinner],
+  imports: [CommonModule, IonContent, IonSpinner, IonIcon],
 })
 export class GamesPage implements OnInit, OnDestroy {
-  private readonly defaultProfileAvatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=180&q=80';
   private readonly localProfileAvatarFallback = 'assets/Images/avatares/Avatar_Blank.png';
+  private readonly avatarAssetsBasePath = 'assets/Images/avatares/';
 
   games: GameCard[] = [];
   isLoading = true;
@@ -127,13 +150,14 @@ export class GamesPage implements OnInit, OnDestroy {
 
   userDisplayName = 'Jugador';
   userInitial = 'J';
+  dashboardStats: UserDashboardStats | null = null;
   resolvedCases = 0;
   currentStreak = 0;
   profileLevel = 1;
   profileProgress = 0;
   profileGoal = 10000;
   sidebarDetectives: SidebarDetective[] = [];
-  profileAvatarUrl = this.defaultProfileAvatarUrl;
+  profileAvatarUrl = this.localProfileAvatarFallback;
   profileAvatarHasError = false;
   onlineFriends: OnlineFriend[] = [
     { name: 'Alex', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80', online: true },
@@ -175,6 +199,9 @@ export class GamesPage implements OnInit, OnDestroy {
   rankingErrorMessage: string | null = null;
   rankingPlayers: RankingModalPlayer[] = [];
   rankingSessionTitle = 'Ranking final';
+  showPendingRewardModal = false;
+  isClaimingPendingReward = false;
+  activePendingReward: PendingRewardDto | null = null;
   winnerFlashSet = new Set<string>();
   private readonly enterSoundPath = 'assets/sounds/Entrar_Sound.mp3';
   private readonly backgroundMusicPath = 'assets/sounds/Music_Games.mp3';
@@ -189,6 +216,13 @@ export class GamesPage implements OnInit, OnDestroy {
   private backButtonListener: { remove: () => Promise<void> } | null = null;
   private readyCarouselTimer: ReturnType<typeof setInterval> | null = null;
   private readyCarouselAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+  private sidebarPendingScoreMap = new Map<string, number | null>();
+  private sidebarPendingScoreLoading = new Set<string>();
+  private pendingRewardsTimer: ReturnType<typeof setInterval> | null = null;
+  private isCheckingPendingRewards = false;
+  private claimedGemsBonus = 0;
+  private claimedPointsBonus = 0;
+  private readonly pendingRewardsPollingIntervalMs = 30000;
   private readonly boardMenuSections: BoardMenuSection[] = [
     {
       title: 'Selecciona una modalidad',
@@ -217,9 +251,25 @@ export class GamesPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private alertController: AlertController,
+    private toastController: ToastController,
+    private loadingController: LoadingController,
     private gameSessionsLiveService: GameSessionsLiveService,
     private pocketService: PocketService,
-  ) {}
+    private rewardsService: RewardsService,
+    private profileService: ProfileService,
+  ) {
+    addIcons({
+      'checkmark-circle-outline': checkmarkCircleOutline,
+      'diamond-outline': diamondOutline,
+      'game-controller-outline': gameControllerOutline,
+      'help-circle-outline': helpCircleOutline,
+      'podium-outline': podiumOutline,
+      'pulse-outline': pulseOutline,
+      'ribbon-outline': ribbonOutline,
+      'stats-chart-outline': statsChartOutline,
+      'trophy-outline': trophyOutline,
+    });
+  }
 
   readonly appVersion = environment.version;
 
@@ -239,8 +289,11 @@ export class GamesPage implements OnInit, OnDestroy {
 
     this.hydrateUserProfile(session);
     this.currentUserId = session.userId;
+    await this.loadUserDashboard();
     await this.loadGames();
     this.startReadyCarouselAutoPlay();
+    await this.checkPendingRewards();
+    this.startPendingRewardsPolling();
 
     try {
       await this.gameSessionsLiveService.startConnection(() => {
@@ -253,6 +306,7 @@ export class GamesPage implements OnInit, OnDestroy {
 
   async ngOnDestroy(): Promise<void> {
     this.stopReadyCarouselAutoPlay();
+    this.stopPendingRewardsPolling();
     this.stopBackgroundMusic();
     await this.releaseOrientationLock();
     await this.gameSessionsLiveService.stopConnection();
@@ -272,6 +326,10 @@ export class GamesPage implements OnInit, OnDestroy {
     if (Capacitor.isNativePlatform()) {
       await StatusBar.hide().catch(() => {});
     }
+
+    await this.loadUserDashboard();
+    await this.checkPendingRewards();
+    this.startPendingRewardsPolling();
   }
 
   async ionViewDidEnter(): Promise<void> {
@@ -286,6 +344,8 @@ export class GamesPage implements OnInit, OnDestroy {
 
   async ionViewWillLeave(): Promise<void> {
     this.stopReadyCarouselAutoPlay();
+    this.stopPendingRewardsPolling();
+    this.showPendingRewardModal = false;
     this.stopBackgroundMusic();
     this.isUserMenuOpen = false;
     await this.releaseOrientationLock();
@@ -375,6 +435,7 @@ export class GamesPage implements OnInit, OnDestroy {
       this.games = newGames;
       this.ensureSelectedGame();
       this.rebuildDashboardMetrics();
+      void this.preloadSidebarPendingScores();
     } catch (error) {
       console.error('Error cargando o mapeando partidas en vivo:', error);
       this.games = [];
@@ -470,7 +531,11 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   get featuredGames(): GameCard[] {
-    return this.displayGames;
+    return this.displayGames.filter((game) => !this.isSidebarPendingGame(game));
+  }
+
+  get sidebarPendingGames(): GameCard[] {
+    return this.games.filter((game) => this.isSidebarPendingGame(game));
   }
 
   get sidebarMenuSections(): BoardMenuSection[] {
@@ -543,6 +608,67 @@ export class GamesPage implements OnInit, OnDestroy {
     return this.readyGames.length > 0;
   }
 
+  get topHudStats(): TopHudStat[] {
+    const stats = this.dashboardStats;
+
+    return [
+      {
+        key: 'gems',
+        icon: 'diamond-outline',
+        label: 'Gemas',
+        value: this.formatNumber(this.gems),
+      },
+      {
+        key: 'points',
+        icon: 'trophy-outline',
+        label: 'Puntos',
+        value: this.formatNumber(this.worldRankingPoints),
+      },
+      {
+        key: 'rank',
+        icon: 'podium-outline',
+        label: 'Ranking global',
+        value: `#${this.formatNumber(Math.max(0, stats?.globalRank ?? 0))}`,
+      },
+      {
+        key: 'played',
+        icon: 'game-controller-outline',
+        label: 'Jugadas',
+        value: this.formatNumber(this.gamesPlayed),
+      },
+      {
+        key: 'won',
+        icon: 'ribbon-outline',
+        label: 'Ganadas',
+        value: this.formatNumber(this.gamesWon),
+      },
+      {
+        key: 'answered',
+        icon: 'help-circle-outline',
+        label: 'Respondidas',
+        value: this.formatNumber(Math.max(0, stats?.totalQuestionsAnswered ?? 0)),
+      },
+      {
+        key: 'correct',
+        icon: 'checkmark-circle-outline',
+        label: 'Correctas',
+        value: this.formatNumber(Math.max(0, stats?.totalCorrectAnswers ?? 0)),
+      },
+      {
+        key: 'winRate',
+        icon: 'stats-chart-outline',
+        label: 'Win rate',
+        value: this.formatPercent(Math.max(0, stats?.winRate ?? 0)),
+      },
+      {
+        key: 'accuracy',
+        icon: 'pulse-outline',
+        label: 'Precision',
+        value: this.formatPercent(Math.max(0, stats?.correctAnswerRate ?? 0)),
+      },
+    ];
+  }
+
   getReadyCarouselTransform(): string {
     return `translateX(-${this.readyCarouselIndex * 100}%)`;
   }
@@ -581,6 +707,10 @@ export class GamesPage implements OnInit, OnDestroy {
 
   trackByBoardStat(_: number, item: BoardStatItem): string {
     return item.label;
+  }
+
+  trackByTopHudStat(_: number, item: TopHudStat): string {
+    return item.key;
   }
 
   selectGame(game: GameCard): void {
@@ -714,6 +844,57 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     return `${seconds}s`;
+  }
+
+  getSidebarPendingLabel(game: GameCard): string {
+    if (!game.session.canStart) {
+      return 'En curso';
+    }
+
+    const action = this.getActionLabel(game.session);
+    if (action === 'Cupo lleno') {
+      return 'Sala llena';
+    }
+
+    if (action === 'Partida finalizada') {
+      return 'Finalizada';
+    }
+
+    const statusCode = (game.session.gameStatusCode || '').toUpperCase();
+    if (statusCode === 'ACTIVE') {
+      return 'En curso';
+    }
+
+    if (statusCode === 'WAITING') {
+      return 'Esperando cierre';
+    }
+
+    return 'No disponible';
+  }
+
+  getSidebarLeaderName(game: GameCard): string {
+    return this.getWinnerDisplayName(game.session);
+  }
+
+  getSidebarLeaderPoints(game: GameCard): number {
+    return this.getWinnerPoints(game.session);
+  }
+
+  getSidebarCurrentUserPoints(game: GameCard): number | null {
+    const score = this.sidebarPendingScoreMap.get(game.session.gameSessionId);
+    if (typeof score === 'number') {
+      return score;
+    }
+
+    return null;
+  }
+
+  isSidebarCurrentUserPointsLoading(game: GameCard): boolean {
+    return this.sidebarPendingScoreLoading.has(game.session.gameSessionId);
+  }
+
+  async openSidebarRanking(game: GameCard): Promise<void> {
+    await this.openRankingModal(game.session);
   }
 
   getRoomPlacesText(game: GameCard): number {
@@ -1219,7 +1400,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   get diamondBalance(): number {
-    return Math.max(9000, this.reportCount * 210);
+    return Math.max(0, (this.dashboardStats?.totalGems ?? 0) + this.claimedGemsBonus);
   }
 
   get gems(): number {
@@ -1227,19 +1408,74 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   get worldRankingPoints(): number {
-    return this.rankingSummary.world;
+    return Math.max(0, (this.dashboardStats?.totalPoints ?? 0) + this.claimedPointsBonus);
   }
 
   get countryRankingPoints(): number {
-    return this.rankingSummary.country;
+    return Math.max(0, this.dashboardStats?.globalRank ?? 0);
+  }
+
+  dismissPendingRewardModal(): void {
+    this.showPendingRewardModal = false;
+  }
+
+  async claimActivePendingReward(): Promise<void> {
+    if (!this.activePendingReward || this.isClaimingPendingReward) {
+      return;
+    }
+
+    const userId = await this.ensureCurrentUserId();
+    if (!userId) {
+      await this.presentToast('No se encontró el usuario logueado.', 'danger');
+      return;
+    }
+
+    const request: ClaimPendingRewardRequest = {
+      pendingRewardId: this.activePendingReward.pendingRewardId,
+      userId,
+    };
+
+    this.isClaimingPendingReward = true;
+    const loading = await this.loadingController.create({
+      message: 'Reclamando recompensa...',
+      spinner: 'crescent',
+    });
+    await loading.present();
+
+    try {
+      const response = await firstValueFrom(
+        this.rewardsService.claimPendingReward(request).pipe(timeout(12000))
+      );
+
+      if (!response.success) {
+        throw new Error(response.message || 'No fue posible reclamar la recompensa.');
+      }
+
+      this.claimedGemsBonus += this.activePendingReward.gemsEarned || 0;
+      this.claimedPointsBonus += this.activePendingReward.pointsEarned || 0;
+      this.rebuildDashboardMetrics();
+
+      this.showPendingRewardModal = false;
+      this.activePendingReward = null;
+
+      const successMessage = response.data?.mensaje || 'Recompensa reclamada con éxito.';
+      await this.presentToast(successMessage, 'success');
+      await this.checkPendingRewards();
+    } catch (error: any) {
+      const message = error?.error?.message || error?.message || 'Error al reclamar recompensa.';
+      await this.presentToast(message, 'danger');
+    } finally {
+      this.isClaimingPendingReward = false;
+      await loading.dismiss().catch(() => {});
+    }
   }
 
   get gamesWon(): number {
-    return Math.max(0, Math.floor(this.trophyScore / 120));
+    return Math.max(0, this.dashboardStats?.totalGamesWon ?? 0);
   }
 
   get gamesPlayed(): number {
-    return Math.max(0, Math.max(80, this.games.length * 16 + 32));
+    return Math.max(0, this.dashboardStats?.totalGamesPlayed ?? 0);
   }
 
   getMissionProgress(mission: MissionMock): number {
@@ -1469,6 +1705,73 @@ export class GamesPage implements OnInit, OnDestroy {
     this.unlockMusicHandler = null;
   }
 
+  private async loadUserDashboard(): Promise<void> {
+    const userId = await this.ensureCurrentUserId();
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.gamesService.getUserDashboard(userId).pipe(timeout(12000))
+      );
+
+      if (!response.success || !response.data) {
+        return;
+      }
+
+      this.dashboardStats = response.data;
+
+      const name = response.data.nickname || response.data.firstName || this.userDisplayName;
+      this.userDisplayName = name;
+      this.userInitial = this.getAvatarInitials(name).slice(0, 1) || 'J';
+      this.profileAvatarHasError = false;
+      this.profileAvatarUrl = this.resolveProfileAvatarUrl(response.data);
+      await this.loadAvatarFromProfile(userId);
+      this.rebuildDashboardMetrics();
+    } catch (error) {
+      console.warn('No fue posible cargar las estadisticas del dashboard.', error);
+    }
+  }
+
+  private async loadAvatarFromProfile(userId: string): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.profileService.getUserProfile(userId).pipe(timeout(12000))
+      );
+
+      if (!response.success || !response.data?.pathAvatar) {
+        return;
+      }
+
+      const pathAvatar = response.data.pathAvatar.trim();
+      if (!pathAvatar) {
+        return;
+      }
+
+      this.profileAvatarUrl = `${this.avatarAssetsBasePath}${pathAvatar}`;
+      if (this.dashboardStats) {
+        this.dashboardStats.pathAvatar = pathAvatar;
+      }
+    } catch {
+      // Keep fallback avatar when profile endpoint is not available.
+    }
+  }
+
+  private resolveProfileAvatarUrl(stats: UserDashboardStats): string {
+    const remoteUrl = stats.profileImageUrl?.trim();
+    if (remoteUrl) {
+      return remoteUrl;
+    }
+
+    const localAvatarPath = stats.pathAvatar?.trim();
+    if (localAvatarPath) {
+      return `${this.avatarAssetsBasePath}${localAvatarPath}`;
+    }
+
+    return this.localProfileAvatarFallback;
+  }
+
   private ensureSelectedGame(): void {
     const ready = this.readyGames;
     if (ready.length > 0) {
@@ -1510,7 +1813,7 @@ export class GamesPage implements OnInit, OnDestroy {
     this.userDisplayName = session.nickName || session.firstName || session.username || 'Jugador';
     this.userInitial = this.getAvatarInitials(this.userDisplayName).slice(0, 1) || 'J';
     this.profileAvatarHasError = false;
-    this.profileAvatarUrl = resolvedAvatar ?? this.defaultProfileAvatarUrl;
+    this.profileAvatarUrl = resolvedAvatar ?? this.localProfileAvatarFallback;
   }
 
   onProfileAvatarError(): void {
@@ -1523,40 +1826,25 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   private rebuildDashboardMetrics(): void {
-    const active = this.currentGame;
-    if (!active) {
-      this.coinsBalance = 0;
-      this.reportCount = 0;
-      this.trophyScore = 0;
-      this.resolvedCases = 0;
-      this.currentStreak = 0;
-      this.profileLevel = 1;
-      this.profileProgress = 0;
-      this.profileGoal = 1000;
-      this.sidebarDetectives = [];
-      return;
-    }
+    const points = this.worldRankingPoints;
+    const dashboardStats = this.dashboardStats;
 
-    const totalEntry = this.games.reduce((sum, game) => sum + Number(game.energy), 0);
-    const totalPlayers = this.games.reduce((sum, game) => sum + game.session.currentPlayers, 0);
+    this.coinsBalance = this.gems;
+    this.reportCount = Math.max(0, dashboardStats?.totalQuestionsAnswered ?? 0);
+    this.trophyScore = points;
+    this.resolvedCases = Math.max(0, dashboardStats?.totalCorrectAnswers ?? 0);
+    this.currentStreak = Math.max(0, dashboardStats?.totalGamesWon ?? 0);
+    this.profileLevel = Math.max(1, Math.floor(points / 300));
+    this.profileGoal = Math.max(1000, (this.profileLevel + 1) * 300);
+    this.profileProgress = points % 300;
 
-    this.coinsBalance = 12000 + totalEntry * 8;
-    this.reportCount = 40 + this.games.length + Math.floor(totalPlayers / 2);
-    this.trophyScore = Math.max(9000, (active.session.winnerScorePoints ?? 9000) + 120);
-
-    this.resolvedCases = Math.max(12, this.games.length * 9 + 18);
-    this.currentStreak = Math.max(3, active.session.currentPlayers + 6);
-    this.profileLevel = Math.max(5, Math.floor(this.resolvedCases / 3));
-    this.profileGoal = 10000;
-    this.profileProgress = Math.min(this.profileGoal, this.trophyScore - 700);
-
-    const currentUserPoints = Math.max(7500, this.trophyScore - 220);
+    const currentUserPoints = Math.max(0, points);
     this.sidebarDetectives = [
       { position: 1, name: 'MysteryMaster', points: currentUserPoints + 2200, isCurrentUser: false },
       { position: 2, name: 'ClueHunter', points: currentUserPoints + 980, isCurrentUser: false },
       { position: 3, name: `${this.userDisplayName} (Tu)`, points: currentUserPoints, isCurrentUser: true },
-      { position: 4, name: 'EnigmaSolver', points: Math.max(6400, currentUserPoints - 360), isCurrentUser: false },
-      { position: 5, name: 'PuzzleKing', points: Math.max(6200, currentUserPoints - 640), isCurrentUser: false },
+      { position: 4, name: 'EnigmaSolver', points: Math.max(0, currentUserPoints - 360), isCurrentUser: false },
+      { position: 5, name: 'PuzzleKing', points: Math.max(0, currentUserPoints - 640), isCurrentUser: false },
     ];
   }
 
@@ -1654,6 +1942,47 @@ export class GamesPage implements OnInit, OnDestroy {
     return code === 'WAITING' || name === 'READY' || name === 'LISTO';
   }
 
+  private async preloadSidebarPendingScores(): Promise<void> {
+    if (!this.currentUserId) {
+      return;
+    }
+
+    const pendingGames = this.sidebarPendingGames;
+    for (const game of pendingGames) {
+      const sessionId = game.session.gameSessionId;
+      if (this.sidebarPendingScoreMap.has(sessionId) || this.sidebarPendingScoreLoading.has(sessionId)) {
+        continue;
+      }
+
+      this.sidebarPendingScoreLoading.add(sessionId);
+      try {
+        const response = await firstValueFrom(
+          this.pocketService.getRanking(sessionId, this.currentUserId).pipe(timeout(12000))
+        );
+
+        if (!response.success || !Array.isArray(response.data)) {
+          this.sidebarPendingScoreMap.set(sessionId, null);
+          continue;
+        }
+
+        const currentUserRow = response.data.find((entry) => entry.isCurrentUser);
+        this.sidebarPendingScoreMap.set(sessionId, currentUserRow?.scorePoints ?? null);
+      } catch {
+        this.sidebarPendingScoreMap.set(sessionId, null);
+      } finally {
+        this.sidebarPendingScoreLoading.delete(sessionId);
+      }
+    }
+  }
+
+  private isSidebarPendingGame(game: GameCard): boolean {
+    if (this.isPlaceholderGame(game)) {
+      return false;
+    }
+    const statusCode = (game.session.gameStatusCode || '').toUpperCase();
+    return !game.session.canUserEnterGame==true && statusCode !== 'FINISHED' && statusCode !== 'CANCELLED';
+  }
+
   private syncReadyCarouselIndex(): void {
     const ready = this.readyGames;
     if (ready.length === 0) {
@@ -1717,5 +2046,118 @@ export class GamesPage implements OnInit, OnDestroy {
         this.readyCarouselAnimationTimer = null;
       }, 760);
     }, 10);
+  }
+
+  private startPendingRewardsPolling(): void {
+    if (this.pendingRewardsTimer) {
+      return;
+    }
+
+    this.pendingRewardsTimer = setInterval(() => {
+      void this.checkPendingRewards();
+    }, this.pendingRewardsPollingIntervalMs);
+  }
+
+  private stopPendingRewardsPolling(): void {
+    if (this.pendingRewardsTimer) {
+      clearInterval(this.pendingRewardsTimer);
+      this.pendingRewardsTimer = null;
+    }
+  }
+
+  private async checkPendingRewards(): Promise<void> {
+    if (this.isCheckingPendingRewards) {
+      return;
+    }
+
+    const userId = await this.ensureCurrentUserId();
+    if (!userId) {
+      return;
+    }
+
+    this.isCheckingPendingRewards = true;
+    try {
+      const response = await firstValueFrom(
+        this.rewardsService.getPendingRewardsByUser(userId).pipe(timeout(12000))
+      );
+
+      if (!response.success || !Array.isArray(response.data)) {
+        return;
+      }
+
+      if (this.showPendingRewardModal || this.isClaimingPendingReward) {
+        return;
+      }
+
+      const [firstReward] = response.data;
+      if (firstReward) {
+        this.activePendingReward = firstReward;
+        this.showPendingRewardModal = true;
+      }
+    } catch (error) {
+      console.error('Error consultando recompensas pendientes:', error);
+    } finally {
+      this.isCheckingPendingRewards = false;
+    }
+  }
+
+  private async ensureCurrentUserId(): Promise<string | null> {
+    if (this.currentUserId) {
+      return this.currentUserId;
+    }
+
+    const session = await this.authService.getSession();
+    if (session?.userId) {
+      this.currentUserId = session.userId;
+      return this.currentUserId;
+    }
+
+    this.currentUserId = this.getUserIdFromLocalStorage();
+    return this.currentUserId;
+  }
+
+  private getUserIdFromLocalStorage(): string | null {
+    const directUserId = localStorage.getItem('userId');
+    if (directUserId && directUserId.trim().length > 0) {
+      return directUserId.trim();
+    }
+
+    const rawUserSession =
+      localStorage.getItem(STORAGE_KEYS.userSession) ||
+      localStorage.getItem('userSession');
+    if (!rawUserSession) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(rawUserSession) as { userId?: string };
+      if (typeof parsed?.userId === 'string' && parsed.userId.trim().length > 0) {
+        return parsed.userId.trim();
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
+  private formatNumber(value: number): string {
+    return Math.max(0, value || 0).toLocaleString('es-MX');
+  }
+
+  private formatPercent(value: number): string {
+    const safe = Math.max(0, Math.min(100, value || 0));
+    return `${safe.toFixed(0)}%`;
+  }
+
+  private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      color,
+      duration: 2400,
+      position: 'top',
+    });
+
+    await toast.present();
   }
 }

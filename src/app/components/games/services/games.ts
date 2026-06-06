@@ -7,6 +7,7 @@ import {
   ApiResponseGames,
   GameSessionLobbyPlayer,
   JoinGameSessionData,
+  UserDashboardStats,
 } from '../class/IGames';
 
 @Injectable({
@@ -14,6 +15,7 @@ import {
 })
 export class GamesService {
   private readonly gameSessionsUrl = `${environment.apiUrl}/GameSessions`;
+  private readonly usersUrl = `${environment.apiUrl}/Users`;
 
   constructor(private http: HttpClient) {}
 
@@ -50,5 +52,9 @@ export class GamesService {
     return this.http.get<ApiResponseGames<GameSessionLobbyPlayer[]>>(
       `${this.gameSessionsUrl}/${gameSessionId}/lobby-players`
     );
+  }
+
+  getUserDashboard(userId: string): Observable<ApiResponseGames<UserDashboardStats>> {
+    return this.http.get<ApiResponseGames<UserDashboardStats>>(`${this.usersUrl}/dashboard/${userId}`);
   }
 }

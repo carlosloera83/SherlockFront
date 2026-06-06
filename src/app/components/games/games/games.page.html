@@ -15,11 +15,16 @@
             </button>
 
             <div class="combat-profile-card__copy">
-              <strong>{{ userDisplayName }}</strong>
+              <div class="combat-profile-card__name-row">
+                <strong>{{ userDisplayName }}</strong>
+                <span class="combat-profile-card__lvl">Nv.{{ profileLevel }}</span>
+              </div>
               <small>Detective Master</small>
-              <small class="combat-profile-card__version">vers {{ appVersion }}</small>
-              <div class="combat-profile-card__progress">
-                <span [style.width.%]="getProfileProgressPercent()"></span>
+              <div class="combat-profile-card__xp-row">
+                <div class="combat-profile-card__progress">
+                  <span [style.width.%]="getProfileProgressPercent()"></span>
+                </div>
+                <span class="combat-profile-card__xp-pct">{{ getProfileProgressPercent() | number:'1.0-0' }}%</span>
               </div>
             </div>
 
@@ -31,11 +36,88 @@
 
           <!-- <button type="button" class="combat-sidebar__cta">Juega y Gana</button> -->
 
-          <section class="combat-mode-image">
-            <img
-              src="assets/Images/principal/Tipos_De_Juego.png"
-              alt="Tipos de juego"
-              class="combat-mode-image__img" />
+          <div class="sidebar-stat-pills" aria-label="Estadísticas del jugador">
+            <div class="sidebar-stat-pill sidebar-stat-pill--wins">
+              <strong>{{ gamesWon | number }}</strong>
+              <small>Victorias</small>
+            </div>
+            <div class="sidebar-stat-pill sidebar-stat-pill--streak">
+              <strong>{{ currentStreak }}</strong>
+              <small>Racha</small>
+            </div>
+            <div class="sidebar-stat-pill sidebar-stat-pill--rank">
+              <strong>#{{ dashboardStats?.globalRank || profileLevel }}</strong>
+              <small>Ranking</small>
+            </div>
+          </div>
+
+          <section class="combat-mode-buttons" aria-label="Selecciona modalidad">
+            <header class="combat-mode-buttons__header">Selecciona una modalidad</header>
+
+            <button
+              type="button"
+              class="combat-mode-buttons__item combat-mode-buttons__item--purple combat-mode-buttons__item--active"
+              aria-pressed="true">
+              <ion-icon name="pulse-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
+              <span class="combat-mode-btn__body">
+                <span class="combat-mode-btn__label">Contra reloj</span>
+                <span class="combat-mode-btn__sub">Responde antes que el tiempo acabe</span>
+              </span>
+              <span class="combat-mode-btn__badge combat-mode-btn__badge--live">LIVE</span>
+            </button>
+
+            <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--blue">
+              <ion-icon name="game-controller-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
+              <span class="combat-mode-btn__body">
+                <span class="combat-mode-btn__label">Battle royale</span>
+                <span class="combat-mode-btn__sub">El último detective en pie gana</span>
+              </span>
+              <span class="combat-mode-btn__badge combat-mode-btn__badge--new">NUEVO</span>
+            </button>
+
+            <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--green">
+              <ion-icon name="trophy-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
+              <span class="combat-mode-btn__body">
+                <span class="combat-mode-btn__label">Por puntaje</span>
+                <span class="combat-mode-btn__sub">Acumula más pts que tus rivales</span>
+              </span>
+            </button>
+          </section>
+
+          <section class="sidebar-pending-list" aria-label="Partidas en curso">
+            <header class="sidebar-pending-list__header">Partidas en curso</header>
+
+            <article class="sidebar-pending-card" *ngFor="let game of sidebarPendingGames; trackBy: trackByGameSession">
+              <div class="sidebar-pending-card__copy">
+                <strong>{{ game.title }}</strong>
+                <small>{{ getSidebarPendingLabel(game) }}</small>
+              </div>
+
+              <div class="sidebar-pending-card__meta">
+                <span>{{ getRoomParticipantsText(game) }}</span>
+                <span>{{ getRoomCountdownText(game) }}</span>
+              </div>
+
+              <div class="sidebar-pending-card__ranking">
+                <span class="sidebar-pending-card__leader">
+                  1º {{ getSidebarLeaderName(game) }} - {{ getSidebarLeaderPoints(game) | number }} pts
+                </span>
+                <span class="sidebar-pending-card__me" *ngIf="!isSidebarCurrentUserPointsLoading(game)">
+                  Yo: {{ (getSidebarCurrentUserPoints(game) ?? 0) | number }} pts
+                </span>
+                <span class="sidebar-pending-card__me" *ngIf="isSidebarCurrentUserPointsLoading(game)">
+                  Yo: cargando...
+                </span>
+              </div>
+
+              <button type="button" class="sidebar-pending-card__ranking-btn" (click)="openSidebarRanking(game)">
+                Ver ranking
+              </button>
+            </article>
+
+            <p class="sidebar-pending-list__empty" *ngIf="sidebarPendingGames.length === 0">
+              No hay partidas bloqueadas en este momento.
+            </p>
           </section>
 
           <!-- <section class="combat-dummy-chat" aria-label="Chat de sala dummy">
@@ -97,30 +179,15 @@
             </div> -->
           </header>
 
-          <div class="combat-stats-bar combat-stats-bar--hud combat-stats-bar--topright" aria-hidden="true">
-            <div class="combat-stat" aria-hidden="true">
-              <span class="combat-stat__icon">💎</span>
-              <span class="combat-stat__value">{{ gems | number }}</span>
-            </div>
-
-            <div class="combat-stat" aria-hidden="true">
-              <span class="combat-stat__icon">🌐</span>
-              <span class="combat-stat__value">{{ worldRankingPoints | number }} pts</span>
-            </div>
-
-            <div class="combat-stat" aria-hidden="true">
-              <span class="combat-stat__icon">🇲🇽</span>
-              <span class="combat-stat__value">{{ countryRankingPoints | number }} pts</span>
-            </div>
-
-            <div class="combat-stat" aria-hidden="true">
-              <span class="combat-stat__icon">🏆</span>
-              <span class="combat-stat__value">{{ gamesWon }}</span>
-            </div>
-
-            <div class="combat-stat" aria-hidden="true">
-              <span class="combat-stat__icon">🎮</span>
-              <span class="combat-stat__value">{{ gamesPlayed }}</span>
+          <div class="combat-stats-bar combat-stats-bar--hud combat-stats-bar--topright">
+            <div
+              class="combat-stat"
+              *ngFor="let stat of (topHudStats | slice:0:4); trackBy: trackByTopHudStat"
+              [attr.title]="stat.label + ': ' + stat.value">
+              <span class="combat-stat__icon" aria-hidden="true">
+                <ion-icon [name]="stat.icon"></ion-icon>
+              </span>
+              <span class="combat-stat__value">{{ stat.value }}</span>
             </div>
           </div>
 
@@ -133,6 +200,20 @@
               <p class="retro-board-warning" *ngIf="showBoardWarning">
                 {{ errorMessage }}  
               </p>
+
+              <div class="empty-state-cta" *ngIf="!showBoardWarning && featuredGames.length === 0">
+                <div class="empty-state-cta__icon" aria-hidden="true">🔍</div>
+                <h3 class="empty-state-cta__title">Sin partidas activas</h3>
+                <p class="empty-state-cta__sub">Sé el primero en abrir una sala y desafía al resto de detectives.</p>
+                <div class="empty-state-cta__online">
+                  <span class="empty-state-cta__dot" aria-hidden="true"></span>
+                  <span>{{ onlinePlayersBadgeCount }} detectives en línea</span>
+                </div>
+                <button type="button" class="empty-state-cta__btn">
+                  <ion-icon name="game-controller-outline" aria-hidden="true"></ion-icon>
+                  Crear sala
+                </button>
+              </div>
 
               <section class="room-list">
                 <article
@@ -203,11 +284,15 @@
           </div>
 
           <footer class="combat-footer">
-            <div class="world-chat-strip">
-              <span>Mundo</span>
-              <p>{{ worldMessage }}</p>
+            <div class="world-event-ticker">
+              <span class="world-event-ticker__pulse" aria-hidden="true"></span>
+              <span class="world-event-ticker__label">EVENTO GLOBAL</span>
+              <p class="world-event-ticker__message">{{ worldMessage }}</p>
+              <span class="world-event-ticker__countdown">
+                <ion-icon name="pulse-outline" aria-hidden="true"></ion-icon>
+                {{ eventCountdown }}
+              </span>
             </div>
-            <!-- <p class="data-hint" *ngIf="dataHintMessage">{{ dataHintMessage }}</p> -->
           </footer>
         </div>
       </div>
@@ -251,6 +336,53 @@
             <span class="ranking-points">{{ player.points }}</span>
           </div>
         </div>
+      </article>
+    </section>
+
+    <section class="reward-modal-backdrop" *ngIf="showPendingRewardModal && activePendingReward" aria-live="polite">
+      <article class="reward-modal" role="dialog" aria-modal="true" aria-label="Recompensa pendiente">
+        <header class="reward-modal__header">
+          <h3>¡Tienes una recompensa pendiente!</h3>
+        </header>
+
+        <div class="reward-modal__body">
+          <div class="reward-modal__case">
+            <span>Partida</span>
+            <strong>{{ activePendingReward.gameSessionName }}</strong>
+          </div>
+
+          <div class="reward-modal__stats">
+            <article>
+              <span>Gemas ganadas</span>
+              <strong>+{{ activePendingReward.gemsEarned | number }} 💎</strong>
+            </article>
+            <article>
+              <span>Puntos ganados</span>
+              <strong>+{{ activePendingReward.pointsEarned | number }} pts</strong>
+            </article>
+          </div>
+
+          <p class="reward-modal__status" *ngIf="activePendingReward.isWinner">Ganaste esta partida. Reclama para reflejarlo en tu perfil.</p>
+        </div>
+
+        <footer class="reward-modal__actions">
+          <button
+            type="button"
+            class="reward-modal__btn reward-modal__btn--primary"
+            [disabled]="isClaimingPendingReward"
+            (click)="claimActivePendingReward()">
+            <ion-spinner name="crescent" *ngIf="isClaimingPendingReward"></ion-spinner>
+            <span>{{ isClaimingPendingReward ? 'Reclamando...' : 'Reclamar' }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="reward-modal__btn reward-modal__btn--ghost"
+            [disabled]="isClaimingPendingReward"
+            (click)="dismissPendingRewardModal()">
+            Más tarde
+          </button>
+        </footer>
       </article>
     </section>
   </section>
