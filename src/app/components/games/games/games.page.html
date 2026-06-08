@@ -1,4 +1,4 @@
-<ion-content class="lobby-content" [fullscreen]="true">
+<ion-content class="lobby-content" [fullscreen]="true" [scrollY]="false">
   <section class="lobby-shell combat-shell">
     <ng-container *ngIf="!isLoading; else loadingState">
       <div class="combat-frame">
@@ -15,10 +15,8 @@
             </button>
 
             <div class="combat-profile-card__copy">
-              <div class="combat-profile-card__name-row">
-                <strong>{{ userDisplayName }}</strong>
-                <span class="combat-profile-card__lvl">Nv.{{ profileLevel }}</span>
-              </div>
+              <strong class="combat-profile-card__name">{{ userDisplayName }}</strong>
+              <span class="combat-profile-card__lvl">Nv.{{ profileLevel }}</span>
               <small>Detective Master</small>
               <div class="combat-profile-card__xp-row">
                 <div class="combat-profile-card__progress">
@@ -217,65 +215,63 @@
 
               <section class="room-list">
                 <article
-                  *ngFor="let game of featuredGames; trackBy: trackByGameSession"
+                  *ngFor="let game of featuredGames; let i = index; trackBy: trackByGameSession"
                   class="room-card"
                   [ngClass]="getRoomThemeClass(game)"
                   [class.room-card--leader-flash]="isWinnerFlashing(game.session)">
-                  <img class="room-card__frame-image" src="/assets/Images/principal/Card_Game_2_1.png" alt="Tarjeta del juego" />
+                  <div
+                    class="room-card__bg"
+                    [style.background-image]="'url(' + getRoomCardArtUrl(i) + ')'"
+                    aria-hidden="true"></div>
 
-                  <div class="room-card__overlay">
-                    <div class="room-card__header">
-                      <div class="room-card__headline">
-                        <p class="room-card__mode">{{ getRoomCategoryText(game) }}</p>
-                        <h3>{{ game.title }}</h3>
+                  <header class="room-card__header">
+                    <span class="room-card__mode">{{ getRoomCategoryText(game) }}</span>
+                    <h3 class="room-card__title">{{ game.title }}</h3>
+                  </header>
+
+                  <div class="room-card__stats">
+                    <ng-container *ngIf="game.session.canStart; else rankingView">
+                      <div class="room-card__stat">
+                        <span>Jugadores</span>
+                        <strong>{{ getRoomParticipantsText(game) }}</strong>
                       </div>
-                    </div>
-
-                    <div class="room-card__body">
-                      <div class="room-card__stats">
-                        <ng-container *ngIf="game.session.canStart; else rankingView">
-                          <div class="room-card__stat">
-                            <strong>{{ getRoomParticipantsText(game) }}</strong>
-                          </div>
-                          <div class="room-card__stat">
-                            <strong>{{ getRoomCountdownText(game) }}</strong>
-                          </div>
-                          <div class="room-card__stat">
-                            <strong>{{ getWinnerPoints(game.session) | number }} pts</strong>
-                          </div>
-                        </ng-container>
-
-                        <ng-template #rankingView>
-                          <div class="room-card__stat room-card__stat--prize">
-                            <span>Premio</span>
-                            <strong>{{ getRoomPrizeGems(game) | number }} 💎</strong>
-                          </div>
-                          <div class="room-card__stat room-card__stat--first">
-                            <span>1º</span>
-                            <strong class="room-card__first-name">{{ getWinnerDisplayName(game.session) }}</strong>
-                            <small class="room-card__first-points">{{ getWinnerPoints(game.session) | number }} pts</small>
-                          </div>
-                        </ng-template>
+                      <div class="room-card__stat">
+                        <span>Tiempo</span>
+                        <strong>{{ getRoomCountdownText(game) }}</strong>
                       </div>
+                      <div class="room-card__stat">
+                        <span>Líder</span>
+                        <strong>{{ getWinnerPoints(game.session) | number }} pts</strong>
+                      </div>
+                    </ng-container>
 
-                      <button
-                        type="button"
-                        class="room-card__enter-btn"
-                        [ngClass]="{ 'room-card__enter-btn--gold': game.session.canUserEnterGame }"
-                        [disabled]="isBoardActionDisabled(game)"
-                        (click)="game.session.canUserEnterGame ? handleBoardAction(game) : (game.session.canStart ? handleBoardAction(game) : openRankingModal(game.session))">
-                        {{ game.session.canUserEnterGame ? 'JUGAR' :  'Ver ranking'  }}
-                      </button>
-
-                      <p class="room-card__status" *ngIf="getRoomThemeClass(game).includes('disabled')">
-                        {{ getBoardStatusText(game) === 'Lleno' ? 'Sala completa' : 'Partida en curso' }}
-                      </p>
-                    </div>
-
-                    <!-- <div class="room-card__actions">
-                      <small class="room-card__spots">{{ getRoomPlacesText(game) }} libres</small>
-                    </div> -->
+                    <ng-template #rankingView>
+                      <div class="room-card__stat room-card__stat--prize">
+                        <span>Premio</span>
+                        <strong>{{ getRoomPrizeGems(game) | number }} 💎</strong>
+                      </div>
+                      <div class="room-card__stat room-card__stat--first">
+                        <span>1º</span>
+                        <strong class="room-card__first-name">{{ getWinnerDisplayName(game.session) }}</strong>
+                        <small class="room-card__first-points">{{ getWinnerPoints(game.session) | number }} pts</small>
+                      </div>
+                    </ng-template>
                   </div>
+
+                  <footer class="room-card__footer">
+                    <button
+                      type="button"
+                      class="room-card__enter-btn"
+                      [ngClass]="{ 'room-card__enter-btn--gold': game.session.canUserEnterGame }"
+                      [disabled]="isBoardActionDisabled(game)"
+                      (click)="game.session.canUserEnterGame ? handleBoardAction(game) : (game.session.canStart ? handleBoardAction(game) : openRankingModal(game.session))">
+                      {{ game.session.canUserEnterGame ? 'JUGAR' : 'Ver ranking' }}
+                    </button>
+
+                    <p class="room-card__status" *ngIf="getRoomThemeClass(game).includes('disabled')">
+                      {{ getBoardStatusText(game) === 'Lleno' ? 'Sala completa' : 'Partida en curso' }}
+                    </p>
+                  </footer>
                 </article>
               </section>
             </main>
