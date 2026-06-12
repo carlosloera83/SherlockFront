@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import {
   IonButton,
   IonCard,
@@ -23,9 +24,15 @@ import { addIcons } from 'ionicons';
 import {
   arrowBackOutline,
   checkmarkOutline,
+  checkmarkCircle,
+  chevronBackOutline,
+  chevronForwardOutline,
   closeOutline,
+  cloudUploadOutline,
+  documentTextOutline,
   saveOutline,
   gameControllerOutline,
+  globeOutline,
   sparklesOutline,
   calendarOutline,
   timeOutline,
@@ -33,15 +40,27 @@ import {
 import { GameSessionService } from './services/game-session.service';
 import {
   AiSessionPreviewQuestion,
+  ApiResponse,
   CreateGameSessionAiPreviewRequest,
+  CreateGameSessionAiPreviewResponse,
   CreateGameSessionFullOptionRequest,
   CreateGameSessionFullQuestionRequest,
   CreateGameSessionFullRequest,
   GameStatus,
   GameStatusCatalogOption,
   GameSummary,
+  QuestionGenerationMode,
 } from './models/game-session.model';
 import { AuthService } from 'src/app/components/auth/services/auth';
+
+interface GenerationModeOption {
+  id: QuestionGenerationMode;
+  title: string;
+  subtitle: string;
+  badge: string;
+  icon: string;
+  cssClass: string;
+}
 
 @Component({
   selector: 'app-game-add-session',
@@ -84,18 +103,41 @@ export class GameAddSessionPage implements OnInit {
   gameStatusOptions: GameStatusCatalogOption[] = [];
   waitingStatusId = '';
 
-  private readonly requiredSessionFields = [
-    'gameId',
-    'gameStatusId',
-    'gameName',
-    'prompt',
-    'numberOfQuestions',
-    'pointsPerQuestion',
-    'costGems',
-    'totalGems',
-    'sessionDate',
-    'startTime',
-    'endTime',
+  currentStep = signal(1);
+  sourceMode = signal<QuestionGenerationMode>('prompt');
+  selectedPdfFile = signal<File | null>(null);
+
+  readonly generationModes: GenerationModeOption[] = [
+    {
+      id: 'prompt',
+      title: 'Prompt IA',
+      subtitle: 'Describe el tema y la IA inventa las preguntas por ti.',
+      badge: 'Creativo',
+      icon: 'sparkles-outline',
+      cssClass: 'mode-prompt',
+    },
+    {
+      id: 'pdf',
+      title: 'Desde PDF',
+      subtitle: 'Sube un documento y conviertelo en trivia al instante.',
+      badge: 'Documento',
+      icon: 'document-text-outline',
+      cssClass: 'mode-pdf',
+    },
+    {
+      id: 'url',
+      title: 'Desde URL',
+      subtitle: 'Pega un enlace y extrae preguntas de su contenido.',
+      badge: 'Web',
+      icon: 'globe-outline',
+      cssClass: 'mode-url',
+    },
+  ];
+
+  readonly wizardSteps = [
+    { step: 1, label: 'Fuente' },
+    { step: 2, label: 'Configuracion' },
+    { step: 3, label: 'Revision' },
   ];
 
   constructor(
@@ -107,9 +149,15 @@ export class GameAddSessionPage implements OnInit {
     addIcons({
       'arrow-back-outline': arrowBackOutline,
       'checkmark-outline': checkmarkOutline,
+      'checkmark-circle': checkmarkCircle,
+      'chevron-back-outline': chevronBackOutline,
+      'chevron-forward-outline': chevronForwardOutline,
       'close-outline': closeOutline,
+      'cloud-upload-outline': cloudUploadOutline,
+      'document-text-outline': documentTextOutline,
       'save-outline': saveOutline,
       'game-controller-outline': gameControllerOutline,
+      'globe-outline': globeOutline,
       'sparkles-outline': sparklesOutline,
       'calendar-outline': calendarOutline,
       'time-outline': timeOutline,
@@ -118,6 +166,7 @@ export class GameAddSessionPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.initializeForm();
+    this.applyModeValidators(this.sourceMode());
     await Promise.all([this.loadGames(), this.loadStatusCatalog()]);
   }
 
@@ -128,7 +177,8 @@ export class GameAddSessionPage implements OnInit {
     const end = new Date(now);
     end.setHours(end.getHours() + 1);
 
-    const dateOnly = now.toISOString().slice(0, 10);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateOnly = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const startTime = now.toTimeString().slice(0, 5);
     const endTime = end.toTimeString().slice(0, 5);
 
@@ -136,7 +186,8 @@ export class GameAddSessionPage implements OnInit {
       gameId: ['', Validators.required],
       gameStatusId: ['', Validators.required],
       gameName: ['', [Validators.required, Validators.minLength(3)]],
-      prompt: ['', [Validators.required, Validators.minLength(10)]],
+      prompt: [''],
+      sourceUrl: [''],
       numberOfQuestions: [10, [Validators.required, Validators.min(1), Validators.max(30)]],
       pointsPerQuestion: [10, [Validators.required, Validators.min(1), Validators.max(100)]],
       costGems: [0, [Validators.required, Validators.min(0)]],
@@ -146,6 +197,31 @@ export class GameAddSessionPage implements OnInit {
       endTime: [endTime, Validators.required],
       questions: this.formBuilder.array([]),
     });
+  }
+
+  private get requiredSessionFields(): string[] {
+    const fields = [
+      'gameId',
+      'gameStatusId',
+      'gameName',
+      'numberOfQuestions',
+      'pointsPerQuestion',
+      'costGems',
+      'totalGems',
+      'sessionDate',
+      'startTime',
+      'endTime',
+    ];
+
+    if (this.sourceMode() === 'prompt') {
+      fields.push('prompt');
+    }
+
+    if (this.sourceMode() === 'url') {
+      fields.push('sourceUrl');
+    }
+
+    return fields;
   }
 
   get questionsFormArray(): FormArray {
@@ -160,6 +236,93 @@ export class GameAddSessionPage implements OnInit {
 
   get hasPreview(): boolean {
     return this.questionsFormArray.length > 0;
+  }
+
+  get selectedModeOption(): GenerationModeOption {
+    return this.generationModes.find((mode) => mode.id === this.sourceMode()) || this.generationModes[0];
+  }
+
+  selectMode(mode: QuestionGenerationMode): void {
+    if (this.sourceMode() === mode) {
+      return;
+    }
+
+    this.sourceMode.set(mode);
+    this.applyModeValidators(mode);
+    this.clearPreview();
+  }
+
+  private applyModeValidators(mode: QuestionGenerationMode): void {
+    const promptControl = this.sessionForm.get('prompt');
+    const urlControl = this.sessionForm.get('sourceUrl');
+
+    if (mode === 'prompt') {
+      promptControl?.setValidators([Validators.required, Validators.minLength(10)]);
+      urlControl?.clearValidators();
+    } else if (mode === 'url') {
+      promptControl?.clearValidators();
+      urlControl?.setValidators([Validators.required, Validators.pattern(/^https?:\/\/.+/i)]);
+    } else {
+      promptControl?.clearValidators();
+      urlControl?.clearValidators();
+    }
+
+    promptControl?.updateValueAndValidity({ emitEvent: false });
+    urlControl?.updateValueAndValidity({ emitEvent: false });
+  }
+
+  goToStep(step: number): void {
+    if (step === this.currentStep()) {
+      return;
+    }
+
+    // Solo se permite avanzar al paso 3 cuando ya existen preguntas generadas.
+    if (step === 3 && !this.hasPreview) {
+      return;
+    }
+
+    this.showNotice = false;
+    this.currentStep.set(step);
+  }
+
+  goBackStep(): void {
+    if (this.currentStep() > 1) {
+      this.goToStep(this.currentStep() - 1);
+    }
+  }
+
+  onPdfSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+
+    if (file && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      this.showErrorAlert('Archivo invalido', 'Solo se permiten archivos PDF.');
+      input.value = '';
+      return;
+    }
+
+    this.selectedPdfFile.set(file);
+    if (file) {
+      this.showNotice = false;
+      this.clearPreview();
+    }
+  }
+
+  removePdfFile(event: Event): void {
+    event.stopPropagation();
+    this.selectedPdfFile.set(null);
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   getQuestionOptions(questionIndex: number): FormArray {
@@ -279,7 +442,20 @@ export class GameAddSessionPage implements OnInit {
       this.sessionForm.get(fieldName)?.updateValueAndValidity({ emitEvent: false });
     });
 
-    if (!this.requiredSessionFields.every((fieldName) => this.sessionForm.get(fieldName)?.valid)) {
+    const invalidFields = this.requiredSessionFields
+      .filter((fieldName) => !this.sessionForm.get(fieldName)?.valid)
+      .map((fieldName) => ({
+        field: fieldName,
+        value: this.sessionForm.get(fieldName)?.value,
+        errors: this.sessionForm.get(fieldName)?.errors,
+      }));
+
+    if (invalidFields.length > 0) {
+      console.log('[validateSessionData] Campos inválidos:', invalidFields);
+      return false;
+    }
+
+    if (this.sourceMode() === 'pdf' && !this.selectedPdfFile()) {
       return false;
     }
 
@@ -296,21 +472,46 @@ export class GameAddSessionPage implements OnInit {
     if (!this.validateSessionData()) {
       this.showErrorAlert(
         'Error de validacion',
-        'Completa el formulario y verifica que la hora de fin sea mayor a la hora de inicio.'
+        this.sourceMode() === 'pdf' && !this.selectedPdfFile()
+          ? 'Sube un archivo PDF y completa el formulario antes de generar.'
+          : 'Completa el formulario y verifica que la hora de fin sea mayor a la hora de inicio.'
       );
       return;
     }
 
     this.isGeneratingPreview = true;
     const raw = this.sessionForm.getRawValue();
+    const numberOfQuestions = Number(raw.numberOfQuestions);
+    const pointsPerQuestion = Number(raw.pointsPerQuestion);
 
-    const payload: CreateGameSessionAiPreviewRequest = {
-      prompt: raw.prompt,
-      numberOfQuestions: Number(raw.numberOfQuestions),
-      pointsPerQuestion: Number(raw.pointsPerQuestion),
-    };
+    let request$: Observable<ApiResponse<CreateGameSessionAiPreviewResponse>>;
 
-    this.gameSessionService.generateSessionPreview(payload).subscribe({
+    switch (this.sourceMode()) {
+      case 'pdf':
+        request$ = this.gameSessionService.generateSessionPreviewFromPdf(
+          this.selectedPdfFile()!,
+          numberOfQuestions,
+          pointsPerQuestion
+        );
+        break;
+      case 'url':
+        request$ = this.gameSessionService.generateSessionPreviewFromUrl({
+          url: raw.sourceUrl,
+          numberOfQuestions,
+          pointsPerQuestion,
+        });
+        break;
+      default: {
+        const payload: CreateGameSessionAiPreviewRequest = {
+          prompt: raw.prompt,
+          numberOfQuestions,
+          pointsPerQuestion,
+        };
+        request$ = this.gameSessionService.generateSessionPreview(payload);
+      }
+    }
+
+    request$.subscribe({
       next: (response) => {
         this.isGeneratingPreview = false;
         if (!response.success) {
@@ -320,6 +521,7 @@ export class GameAddSessionPage implements OnInit {
 
         const questions = response.data?.questions || [];
         this.replaceQuestionsFromPreview(questions);
+        this.currentStep.set(3);
         this.showSuccessAlert('Vista previa lista', response.message || 'Preguntas generadas exitosamente.');
       },
       error: (error) => {
@@ -395,7 +597,7 @@ export class GameAddSessionPage implements OnInit {
       gameId: raw.gameId,
       gameStatusId: this.waitingStatusId || raw.gameStatusId,
       name: raw.gameName,
-      description: raw.prompt,
+      description: this.buildSessionDescription(raw),
       sessionDate: raw.sessionDate,
       scheduledStartTime: this.buildIsoDateTime(raw.sessionDate, raw.startTime),
       scheduledEndTime: this.buildIsoDateTime(raw.sessionDate, raw.endTime),
@@ -428,6 +630,17 @@ export class GameAddSessionPage implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/games/admin']);
+  }
+
+  private buildSessionDescription(raw: { prompt: string; sourceUrl: string }): string {
+    switch (this.sourceMode()) {
+      case 'pdf':
+        return `Preguntas generadas desde PDF: ${this.selectedPdfFile()?.name || 'documento'}`;
+      case 'url':
+        return `Preguntas generadas desde URL: ${raw.sourceUrl}`;
+      default:
+        return raw.prompt;
+    }
   }
 
   private replaceQuestionsFromPreview(questions: AiSessionPreviewQuestion[]): void {
@@ -469,23 +682,6 @@ export class GameAddSessionPage implements OnInit {
     const offsetHours = pad(Math.floor(absMinutes / 60));
     const offsetMins = pad(absMinutes % 60);
     return `${isoLocal}${sign}${offsetHours}:${offsetMins}`;
-  }
-
-  private createQuestionGroup(tempQuestionId: number): FormGroup {
-    return this.formBuilder.group({
-      tempQuestionId: [tempQuestionId, [Validators.required, Validators.min(1)]],
-      questionText: ['', [Validators.required, Validators.minLength(3)]],
-      explanation: ['', [Validators.required, Validators.minLength(3)]],
-      platformUrl: ['', [Validators.pattern(/^https?:\/\/.+/i)]],
-      difficultyLevel: [1, [Validators.required, Validators.min(1)]],
-      questionOrder: [tempQuestionId, [Validators.required, Validators.min(1)]],
-      points: [10, [Validators.required, Validators.min(0)]],
-      isRequired: [true, Validators.required],
-      options: this.formBuilder.array([
-        this.createOptionGroup(1, true),
-        this.createOptionGroup(2, false),
-      ]),
-    });
   }
 
   private createOptionGroup(displayOrder: number, isCorrect = false, optionText = ''): FormGroup {
@@ -532,6 +728,7 @@ export class GameAddSessionPage implements OnInit {
       gameStatusId: this.sessionForm.get('gameStatusId')?.value,
       gameName: '',
       prompt: '',
+      sourceUrl: '',
       numberOfQuestions: 10,
       pointsPerQuestion: 10,
       costGems: 0,
@@ -542,6 +739,8 @@ export class GameAddSessionPage implements OnInit {
     });
 
     this.clearPreview();
+    this.selectedPdfFile.set(null);
+    this.currentStep.set(1);
   }
 
   closeAlert(): void {

@@ -18,6 +18,14 @@ export interface CreateGameSessionAiPreviewRequest {
   pointsPerQuestion: number;
 }
 
+export interface CreateGameSessionAiPreviewFromUrlRequest {
+  url: string;
+  numberOfQuestions: number;
+  pointsPerQuestion: number;
+}
+
+export type QuestionGenerationMode = 'prompt' | 'pdf' | 'url';
+
 export interface AiSessionPreviewOption {
   optionText: string;
   isCorrect: boolean;

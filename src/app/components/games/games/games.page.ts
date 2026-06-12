@@ -274,7 +274,7 @@ export class GamesPage implements OnInit, OnDestroy {
   readonly appVersion = environment.version;
 
   async ngOnInit(): Promise<void> {
-    await this.forceLandscapeOrientation();
+    await this.forcePortraitOrientation();
     if (Capacitor.isNativePlatform()) {
       await StatusBar.hide().catch(() => {});
     }
@@ -320,7 +320,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   async ionViewWillEnter(): Promise<void> {
-    await this.forceLandscapeOrientation();
+    await this.forcePortraitOrientation();
     await this.ensureBackgroundMusicStarted();
     this.startReadyCarouselAutoPlay();
     if (Capacitor.isNativePlatform()) {
@@ -333,7 +333,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   async ionViewDidEnter(): Promise<void> {
-    await this.forceLandscapeOrientation();
+    await this.forcePortraitOrientation();
     if (Capacitor.isNativePlatform()) {
       await StatusBar.hide().catch(() => {});
       this.backButtonListener = await App.addListener('backButton', () => {
@@ -772,6 +772,17 @@ export class GamesPage implements OnInit, OnDestroy {
 
     const action = this.getActionButtonText(game.session);
     return action === 'Entrar' ? 'Unirme' : action;
+  }
+
+  private readonly roomCardArtUrls = [
+    'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=640&q=80',
+    'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=640&q=80',
+    'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=640&q=80',
+    'https://images.unsplash.com/photo-1552820728-8b83bb6b2b0b?auto=format&fit=crop&w=640&q=80',
+  ];
+
+  getRoomCardArtUrl(index: number): string {
+    return this.roomCardArtUrls[index % this.roomCardArtUrls.length];
   }
 
   getRoomThemeClass(game: GameCard): string {
@@ -1899,21 +1910,21 @@ export class GamesPage implements OnInit, OnDestroy {
     return Math.max(48, Math.round(baseline));
   }
 
-  private async forceLandscapeOrientation(): Promise<void> {
+  private async forcePortraitOrientation(): Promise<void> {
     try {
       if (Capacitor.isNativePlatform()) {
-        await ScreenOrientation.lock({ orientation: 'landscape' });
+        await ScreenOrientation.lock({ orientation: 'portrait' });
       } else {
         const orientationApi = (window.screen as Screen & { orientation?: { lock?: (type: string) => Promise<void> } }).orientation;
         if (orientationApi?.lock) {
-          await orientationApi.lock('landscape');
+          await orientationApi.lock('portrait');
         }
       }
 
       this.orientationLocked = true;
     } catch (error) {
       this.orientationLocked = false;
-      console.warn('No se pudo bloquear orientacion horizontal en Games.', error);
+      console.warn('No se pudo bloquear orientacion vertical en Games.', error);
     }
   }
 

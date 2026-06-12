@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   CreateGameSessionAiPreviewRequest,
+  CreateGameSessionAiPreviewFromUrlRequest,
   CreateGameSessionAiPreviewResponse,
   ApiResponse,
   CreateGameSessionFullRequest,
@@ -30,6 +31,31 @@ export class GameSessionService {
     payload: CreateGameSessionAiPreviewRequest
   ): Observable<ApiResponse<CreateGameSessionAiPreviewResponse>> {
     return this.http.post<ApiResponse<CreateGameSessionAiPreviewResponse>>(this.gameSessionPreviewUrl, payload);
+  }
+
+  generateSessionPreviewFromPdf(
+    pdfFile: File,
+    numberOfQuestions: number,
+    pointsPerQuestion: number
+  ): Observable<ApiResponse<CreateGameSessionAiPreviewResponse>> {
+    const formData = new FormData();
+    formData.append('PdfFile', pdfFile, pdfFile.name);
+    formData.append('NumberOfQuestions', String(numberOfQuestions));
+    formData.append('PointsPerQuestion', String(pointsPerQuestion));
+
+    return this.http.post<ApiResponse<CreateGameSessionAiPreviewResponse>>(
+      `${this.gameSessionPreviewUrl}/FromPDF`,
+      formData
+    );
+  }
+
+  generateSessionPreviewFromUrl(
+    payload: CreateGameSessionAiPreviewFromUrlRequest
+  ): Observable<ApiResponse<CreateGameSessionAiPreviewResponse>> {
+    return this.http.post<ApiResponse<CreateGameSessionAiPreviewResponse>>(
+      `${this.gameSessionPreviewUrl}/FromURL`,
+      payload
+    );
   }
 
   getGames(userId: string): Observable<ApiResponse<GameSummary[]>> {
