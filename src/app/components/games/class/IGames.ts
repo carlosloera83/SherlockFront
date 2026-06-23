@@ -29,6 +29,8 @@ export interface ActiveGameSession {
   winnerUserId: string | null;
   winnerScorePoints: number | null;
   firstPlace : string | null;
+  category?: string | null;
+  backgroundImage?: string | null;
 }
 
 export interface ApiResponseGames<T> {

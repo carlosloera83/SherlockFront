@@ -481,6 +481,8 @@ export class GamesPage implements OnInit, OnDestroy {
       winnerUserId: s.winnerUserId ?? null,
       winnerScorePoints: s.winnerScorePoints ?? null,
       firstPlace: s.firstPlace ?? null,
+      category: s.category ?? null,
+      backgroundImage: s.backgroundImage ?? null,
     };
 
     const statusTone = this.resolveStatusTone(safeSession.gameStatusCode);
@@ -774,20 +776,28 @@ export class GamesPage implements OnInit, OnDestroy {
     return action === 'Entrar' ? 'Unirme' : action;
   }
 
-  private readonly roomCardArtUrls = [
-    'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=640&q=80',
-    'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=640&q=80',
-    'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=640&q=80',
-    'https://images.unsplash.com/photo-1552820728-8b83bb6b2b0b?auto=format&fit=crop&w=640&q=80',
-  ];
+  private readonly defaultRoomCardArtUrl = 'assets/categories/Musica.png';
 
-  getRoomCardArtUrl(index: number): string {
-    return this.roomCardArtUrls[index % this.roomCardArtUrls.length];
+  getRoomCardArtUrl(game: GameCard): string {
+    const imageName = (game.session.backgroundImage || '').trim();
+    return imageName ? `assets/categories/${imageName}` : this.defaultRoomCardArtUrl;
+  }
+
+  isLiveGame(game: GameCard): boolean {
+    return (game.session.gameStatusCode || '').toUpperCase() === 'IN_PROGRESS';
   }
 
   getRoomThemeClass(game: GameCard): string {
     const label = `${game.title} ${game.subtitle}`.toUpperCase();
     const boardClass = this.getBoardCardClass(game);
+
+    if (this.isLiveGame(game)) {
+      return boardClass === 'game-room--open' ? 'room-card--live' : 'room-card--live room-card--disabled';
+    }
+
+    if ((game.session.gameStatusCode || '').toUpperCase() === 'WAITING') {
+      return boardClass === 'game-room--open' ? 'room-card--violet' : 'room-card--violet room-card--disabled';
+    }
 
     if (label.includes('MUNDIAL') || label.includes('RANK')) {
       return boardClass === 'game-room--open' ? 'room-card--gold' : 'room-card--gold room-card--disabled';
@@ -800,13 +810,16 @@ export class GamesPage implements OnInit, OnDestroy {
     return 'room-card--violet';
   }
 
-  getRoomCategoryText(game: GameCard): string {
-    const label = `${game.title} ${game.subtitle}`.toUpperCase();
-    if (label.includes('MUNDIAL') || label.includes('RANK')) {
-      return 'RANKINGS';
+  getRoomRarityLabel(game: GameCard): string {
+    return (game.session.category || '').trim();
+  }
+
+  getRoomLeaderText(game: GameCard): string {
+    if (!game.session.firstPlace) {
+      return 'Por definir';
     }
 
-    return 'POCKET';
+    return `${this.getWinnerDisplayName(game.session)} - ${this.getWinnerPoints(game.session)} pts`;
   }
 
   getRoomParticipantsText(game: GameCard): string {

@@ -64,22 +64,22 @@
               <span class="combat-mode-btn__badge combat-mode-btn__badge--live">LIVE</span>
             </button>
 
-            <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--blue">
+            <!-- <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--blue">
               <ion-icon name="game-controller-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
               <span class="combat-mode-btn__body">
                 <span class="combat-mode-btn__label">Battle royale</span>
                 <span class="combat-mode-btn__sub">El último detective en pie gana</span>
               </span>
               <span class="combat-mode-btn__badge combat-mode-btn__badge--new">NUEVO</span>
-            </button>
+            </button> -->
 
-            <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--green">
+            <!-- <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--green">
               <ion-icon name="trophy-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
               <span class="combat-mode-btn__body">
                 <span class="combat-mode-btn__label">Por puntaje</span>
                 <span class="combat-mode-btn__sub">Acumula más pts que tus rivales</span>
               </span>
-            </button>
+            </button> -->
           </section>
 
           <section class="sidebar-pending-list" aria-label="Partidas en curso">
@@ -215,50 +215,52 @@
 
               <section class="room-list">
                 <article
-                  *ngFor="let game of featuredGames; let i = index; trackBy: trackByGameSession"
+                  *ngFor="let game of featuredGames; trackBy: trackByGameSession"
                   class="room-card"
                   [ngClass]="getRoomThemeClass(game)"
                   [class.room-card--leader-flash]="isWinnerFlashing(game.session)">
                   <div
                     class="room-card__bg"
-                    [style.background-image]="'url(' + getRoomCardArtUrl(i) + ')'"
+                    [style.background-image]="'url(' + getRoomCardArtUrl(game) + ')'"
                     aria-hidden="true"></div>
+                  <span class="room-card__sheen" aria-hidden="true"></span>
+                  <span class="room-card__corner room-card__corner--tr" aria-hidden="true"></span>
+                  <span class="room-card__corner room-card__corner--bl" aria-hidden="true"></span>
 
-                  <header class="room-card__header">
-                    <span class="room-card__mode">{{ getRoomCategoryText(game) }}</span>
-                    <h3 class="room-card__title">{{ game.title }}</h3>
+                  <header class="room-card__badges">
+                    <span class="room-card__rarity" *ngIf="getRoomRarityLabel(game)">{{ getRoomRarityLabel(game) }}</span>
+                    <span class="room-card__flag" *ngIf="isLiveGame(game)">
+                      <span class="room-card__rec-dot" aria-hidden="true"></span>
+                      ¡En vivo!
+                    </span>
                   </header>
 
-                  <div class="room-card__stats">
-                    <ng-container *ngIf="game.session.canStart; else rankingView">
-                      <div class="room-card__stat">
-                        <span>Jugadores</span>
-                        <strong>{{ getRoomParticipantsText(game) }}</strong>
+                  <div class="room-card__body">
+                    <h3 class="room-card__title">{{ game.title }}</h3>
+
+                    <div class="room-card__stats">
+                      <div class="room-card__stat room-card__stat--cost">
+                        <span>Costo</span>
+                        <strong>{{ getRoomCostGems(game) | number }} 💎</strong>
                       </div>
                       <div class="room-card__stat">
-                        <span>Tiempo</span>
+                        <span>Tiempo restante</span>
                         <strong>{{ getRoomCountdownText(game) }}</strong>
                       </div>
                       <div class="room-card__stat">
                         <span>Líder</span>
-                        <strong>{{ getWinnerPoints(game.session) | number }} pts</strong>
+                        <strong>{{ getRoomLeaderText(game) }}</strong>
                       </div>
-                    </ng-container>
-
-                    <ng-template #rankingView>
-                      <div class="room-card__stat room-card__stat--prize">
-                        <span>Premio</span>
-                        <strong>{{ getRoomPrizeGems(game) | number }} 💎</strong>
-                      </div>
-                      <div class="room-card__stat room-card__stat--first">
-                        <span>1º</span>
-                        <strong class="room-card__first-name">{{ getWinnerDisplayName(game.session) }}</strong>
-                        <small class="room-card__first-points">{{ getWinnerPoints(game.session) | number }} pts</small>
-                      </div>
-                    </ng-template>
+                    </div>
                   </div>
 
                   <footer class="room-card__footer">
+                    <span class="room-card__price">
+                      <span class="room-card__price-label">Premio</span>
+                      <span class="room-card__price-gem" aria-hidden="true">💎</span>
+                      {{ getRoomPrizeGems(game) | number }}
+                    </span>
+
                     <button
                       type="button"
                       class="room-card__enter-btn"

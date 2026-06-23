@@ -8,6 +8,8 @@ export interface CreateGameSessionFullRequest {
   scheduledEndTime: string;
   costGems: number;
   totalGems: number;
+  categoryId: string;
+  secondsPerQuestion: number;
   questions: CreateGameSessionFullQuestionRequest[];
   options: CreateGameSessionFullOptionRequest[];
 }
@@ -77,6 +79,11 @@ export interface CreateGameSessionFullOptionRequest {
 }
 
 export interface GameSummary {
+  id: string;
+  name: string;
+}
+
+export interface Category {
   id: string;
   name: string;
 }

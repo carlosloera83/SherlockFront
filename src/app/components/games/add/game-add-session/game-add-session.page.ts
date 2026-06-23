@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, TimeoutError } from 'rxjs';
 import {
   IonButton,
   IonCard,
@@ -29,18 +29,22 @@ import {
   chevronForwardOutline,
   closeOutline,
   cloudUploadOutline,
+  createOutline,
   documentTextOutline,
+  helpCircleOutline,
   saveOutline,
   gameControllerOutline,
   globeOutline,
   sparklesOutline,
   calendarOutline,
   timeOutline,
+  trophyOutline,
 } from 'ionicons/icons';
 import { GameSessionService } from './services/game-session.service';
 import {
   AiSessionPreviewQuestion,
   ApiResponse,
+  Category,
   CreateGameSessionAiPreviewRequest,
   CreateGameSessionAiPreviewResponse,
   CreateGameSessionFullOptionRequest,
@@ -93,6 +97,7 @@ export class GameAddSessionPage implements OnInit {
   isGeneratingPreview = false;
   isLoadingGames = false;
   isLoadingStatuses = false;
+  isLoadingCategories = false;
   showNotice = false;
   alertMessage = '';
   alertTitle = '';
@@ -100,6 +105,7 @@ export class GameAddSessionPage implements OnInit {
   createdSessionId = '';
   selectedQuestionIndex = 0;
   games: GameSummary[] = [];
+  categories: Category[] = [];
   gameStatusOptions: GameStatusCatalogOption[] = [];
   waitingStatusId = '';
 
@@ -154,20 +160,23 @@ export class GameAddSessionPage implements OnInit {
       'chevron-forward-outline': chevronForwardOutline,
       'close-outline': closeOutline,
       'cloud-upload-outline': cloudUploadOutline,
+      'create-outline': createOutline,
       'document-text-outline': documentTextOutline,
+      'help-circle-outline': helpCircleOutline,
       'save-outline': saveOutline,
       'game-controller-outline': gameControllerOutline,
       'globe-outline': globeOutline,
       'sparkles-outline': sparklesOutline,
       'calendar-outline': calendarOutline,
       'time-outline': timeOutline,
+      'trophy-outline': trophyOutline,
     });
   }
 
   async ngOnInit(): Promise<void> {
     this.initializeForm();
     this.applyModeValidators(this.sourceMode());
-    await Promise.all([this.loadGames(), this.loadStatusCatalog()]);
+    await Promise.all([this.loadGames(), this.loadStatusCatalog(), this.loadCategories()]);
   }
 
   private initializeForm(): void {
@@ -185,10 +194,12 @@ export class GameAddSessionPage implements OnInit {
     this.sessionForm = this.formBuilder.group({
       gameId: ['', Validators.required],
       gameStatusId: ['', Validators.required],
+      categoryId: ['', Validators.required],
       gameName: ['', [Validators.required, Validators.minLength(3)]],
       prompt: [''],
       sourceUrl: [''],
-      numberOfQuestions: [10, [Validators.required, Validators.min(1), Validators.max(30)]],
+      numberOfQuestions: [10, [Validators.required, Validators.min(1), Validators.max(500)]],
+      secondsPerQuestion: [30, [Validators.required, Validators.min(5), Validators.max(300)]],
       pointsPerQuestion: [10, [Validators.required, Validators.min(1), Validators.max(100)]],
       costGems: [0, [Validators.required, Validators.min(0)]],
       totalGems: [0, [Validators.required, Validators.min(0)]],
@@ -203,8 +214,10 @@ export class GameAddSessionPage implements OnInit {
     const fields = [
       'gameId',
       'gameStatusId',
+      'categoryId',
       'gameName',
       'numberOfQuestions',
+      'secondsPerQuestion',
       'pointsPerQuestion',
       'costGems',
       'totalGems',
@@ -418,6 +431,21 @@ export class GameAddSessionPage implements OnInit {
     });
   }
 
+  private async loadCategories(): Promise<void> {
+    this.isLoadingCategories = true;
+    this.gameSessionService.getCategories().subscribe({
+      next: (response) => {
+        this.isLoadingCategories = false;
+        if (response.success) {
+          this.categories = response.data || [];
+        }
+      },
+      error: () => {
+        this.isLoadingCategories = false;
+      },
+    });
+  }
+
   private buildStatusOptions(statuses: GameStatus[]): GameStatusCatalogOption[] {
     return statuses.map((status) => ({
       code: status.code,
@@ -526,6 +554,15 @@ export class GameAddSessionPage implements OnInit {
       },
       error: (error) => {
         this.isGeneratingPreview = false;
+
+        if (error instanceof TimeoutError) {
+          this.showErrorAlert(
+            'Tiempo de espera agotado',
+            'La generacion de preguntas tardo demasiado. Intenta con menos preguntas o vuelve a intentarlo.'
+          );
+          return;
+        }
+
         this.showErrorAlert('Error', error.error?.message || 'Ocurrio un error al generar preguntas con IA.');
       },
     });
@@ -603,6 +640,8 @@ export class GameAddSessionPage implements OnInit {
       scheduledEndTime: this.buildIsoDateTime(raw.sessionDate, raw.endTime),
       costGems: Number(raw.costGems),
       totalGems: Number(raw.totalGems),
+      categoryId: raw.categoryId,
+      secondsPerQuestion: Number(raw.secondsPerQuestion),
       questions,
       options,
     };
@@ -726,10 +765,12 @@ export class GameAddSessionPage implements OnInit {
     this.sessionForm.reset({
       gameId: this.sessionForm.get('gameId')?.value,
       gameStatusId: this.sessionForm.get('gameStatusId')?.value,
+      categoryId: this.sessionForm.get('categoryId')?.value,
       gameName: '',
       prompt: '',
       sourceUrl: '',
       numberOfQuestions: 10,
+      secondsPerQuestion: 30,
       pointsPerQuestion: 10,
       costGems: 0,
       totalGems: 0,

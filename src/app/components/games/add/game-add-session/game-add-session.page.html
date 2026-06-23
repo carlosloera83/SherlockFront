@@ -1,18 +1,21 @@
 <ion-content class="page-content" [fullscreen]="true">
   <section class="ai-session-shell">
-    <header class="top-bar">
-      <ion-button fill="clear" color="light" (click)="goBack()">
+    <header class="brand-bar">
+      <div class="brand-identity">
+        <img src="assets/Images/LogoSH.png" alt="Sherlock" class="brand-logo" />
+        <div class="brand-text">
+          <h1 class="brand-title">Crea tus Sesiones</h1>
+          <p class="brand-sub">Administración de sesiones con IA · Sherlock</p>
+        </div>
+      </div>
+      <ion-button fill="clear" color="light" size="small" (click)="goBack()">
         <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
         Volver
       </ion-button>
-      <div class="title-wrap">
-        <h1>Creador de Sesiones IA</h1>
-        <p>Elige tu fuente, configura el juego y revisa las preguntas antes de publicar.</p>
-      </div>
     </header>
 
     <nav class="step-tracker">
-      <ng-container *ngFor="let item of wizardSteps; let last = last">
+      @for (item of wizardSteps; track item.step; let last = $last) {
         <button
           type="button"
           class="step-node"
@@ -21,382 +24,453 @@
           [disabled]="item.step === 3 && !hasPreview"
           (click)="goToStep(item.step)">
           <span class="step-circle">
-            <ion-icon name="checkmark-outline" *ngIf="currentStep() > item.step"></ion-icon>
-            <span *ngIf="currentStep() <= item.step">{{ item.step }}</span>
+            @if (currentStep() > item.step) {
+              <ion-icon name="checkmark-outline"></ion-icon>
+            } @else {
+              <span>{{ item.step }}</span>
+            }
           </span>
           <span class="step-label">{{ item.label }}</span>
         </button>
-        <div class="step-line" [class.is-done]="currentStep() > item.step" *ngIf="!last"></div>
-      </ng-container>
+        @if (!last) {
+          <div class="step-line" [class.is-done]="currentStep() > item.step"></div>
+        }
+      }
     </nav>
 
-    <div class="inline-notice" *ngIf="showNotice" [class.is-success]="isSuccess" [class.is-error]="!isSuccess">
-      <div class="notice-copy">
-        <strong>{{ alertTitle }}</strong>
-        <p>{{ alertMessage }}</p>
+    @if (showNotice) {
+      <div class="inline-notice" [class.is-success]="isSuccess" [class.is-error]="!isSuccess">
+        <div class="notice-copy">
+          <strong>{{ alertTitle }}</strong>
+          <p>{{ alertMessage }}</p>
+        </div>
+        <button class="notice-close" type="button" (click)="closeAlert()" aria-label="Cerrar aviso">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
       </div>
-      <button class="notice-close" type="button" (click)="closeAlert()" aria-label="Cerrar aviso">
-        <ion-icon name="close-outline"></ion-icon>
-      </button>
-    </div>
+    }
 
     <div [formGroup]="sessionForm">
       <!-- PASO 1: Seleccion de fuente -->
-      <section class="step-panel" *ngIf="currentStep() === 1">
-        <div class="step-intro">
-          <h2>¿Como quieres crear tus preguntas?</h2>
-        <p>Elige tu fuente de inteligencia, detective.</p>
-        </div>
+      @if (currentStep() === 1) {
+        <section class="step-panel">
+          <div class="step-intro">
+            <h2>¿Como quieres crear tus preguntas?</h2>
+            <p>Elige tu fuente de inteligencia, detective.</p>
+          </div>
 
-        <div class="mode-grid">
-          <button
-            type="button"
-            class="mode-card"
-            *ngFor="let mode of generationModes"
-            [ngClass]="mode.cssClass"
-            [class.is-selected]="sourceMode() === mode.id"
-            (click)="selectMode(mode.id)">
-            <span class="mode-glow"></span>
-            <ion-icon class="mode-check" name="checkmark-circle" *ngIf="sourceMode() === mode.id"></ion-icon>
-            <span class="mode-icon">
-              <ion-icon [name]="mode.icon"></ion-icon>
-            </span>
-            <h3>{{ mode.title }}</h3>
-            <p>{{ mode.subtitle }}</p>
-            <span class="mode-badge">{{ mode.badge }}</span>
-          </button>
-        </div>
+          <div class="mode-grid">
+            @for (mode of generationModes; track mode.id) {
+              <button
+                type="button"
+                class="mode-card"
+                [ngClass]="mode.cssClass"
+                [class.is-selected]="sourceMode() === mode.id"
+                (click)="selectMode(mode.id)">
+                <span class="mode-glow"></span>
+                @if (sourceMode() === mode.id) {
+                  <ion-icon class="mode-check" name="checkmark-circle"></ion-icon>
+                }
+                <span class="mode-icon">
+                  <ion-icon [name]="mode.icon"></ion-icon>
+                </span>
+                <h3>{{ mode.title }}</h3>
+                <p>{{ mode.subtitle }}</p>
+                <span class="mode-badge">{{ mode.badge }}</span>
+              </button>
+            }
+          </div>
 
-        <div class="wizard-actions end">
-          <ion-button color="primary" (click)="goToStep(2)">
-            Continuar
-            <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
-          </ion-button>
-        </div>
-      </section>
+          <div class="wizard-actions end">
+            <ion-button color="primary" (click)="goToStep(2)">
+              Continuar
+              <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+            </ion-button>
+          </div>
+        </section>
+      }
 
       <!-- PASO 2: Configuracion -->
-      <section class="step-panel" *ngIf="currentStep() === 2">
-        <ion-card class="config-card">
-          <ion-card-header>
-            <ion-card-title>
-              <img src="assets/Images/LogoSH.png" alt="Sherlock" class="session-logo" />
-              Configuracion del Quiz
-              <span class="mode-pill" [ngClass]="selectedModeOption.cssClass">
-                <ion-icon [name]="selectedModeOption.icon"></ion-icon>
-                {{ selectedModeOption.title }}
-              </span>
-            </ion-card-title>
-          </ion-card-header>
-
-          <ion-card-content>
-            <div class="loading-games" *ngIf="isLoadingGames || isLoadingStatuses">
+      @if (currentStep() === 2) {
+        <section class="step-panel">
+          @if (isLoadingGames || isLoadingStatuses || isLoadingCategories) {
+            <div class="loading-games">
               <ion-spinner name="crescent" color="primary"></ion-spinner>
               <span>Cargando catalogos...</span>
             </div>
+          }
 
-            <div class="input-stack" *ngIf="!isLoadingGames">
-              <!-- Fuente segun el modo elegido -->
-              <ion-item class="form-item source-field" *ngIf="sourceMode() === 'prompt'">
-                <ion-label position="stacked">
-                  <ion-icon name="sparkles-outline"></ion-icon>
-                  Prompt enviado a la IA *
-                </ion-label>
-                <ion-textarea
-                  formControlName="prompt"
-                  rows="3"
-                  placeholder="quiero una sesion de 10 preguntas de tecnologia"
-                ></ion-textarea>
-              </ion-item>
+          @if (!isLoadingGames) {
+            <div class="form-body-grid">
 
-              <div class="pdf-drop" *ngIf="sourceMode() === 'pdf'" (click)="pdfInput.click()">
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  hidden
-                  #pdfInput
-                  (change)="onPdfSelected($event)" />
-                <ion-icon name="cloud-upload-outline" class="pdf-drop-icon"></ion-icon>
-                <ng-container *ngIf="selectedPdfFile() as file; else noPdf">
-                  <strong class="pdf-name">{{ file.name }}</strong>
-                  <span class="pdf-hint">{{ formatFileSize(file.size) }} — toca para cambiar</span>
-                  <button type="button" class="pdf-remove" (click)="removePdfFile($event)">
-                    <ion-icon name="close-outline"></ion-icon>
-                    Quitar
-                  </button>
-                </ng-container>
-                <ng-template #noPdf>
-                  <strong class="pdf-name">Toca para subir tu PDF *</strong>
-                  <span class="pdf-hint">La IA convertira el documento en preguntas</span>
-                </ng-template>
+              <!-- Columna izquierda -->
+              <div class="form-column">
+
+                <div class="config-section">
+                  <div class="section-header">
+                    <ion-icon name="game-controller-outline"></ion-icon>
+                    <span>Juego</span>
+                  </div>
+                  <div class="form-grid-3">
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Juego *</ion-label>
+                      <ion-select formControlName="gameId" placeholder="Selecciona un juego" interface="popover">
+                        @for (game of games; track game.id) {
+                          <ion-select-option [value]="game.id">{{ game.name }}</ion-select-option>
+                        }
+                      </ion-select>
+                    </ion-item>
+
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Estatus *</ion-label>
+                      <ion-select formControlName="gameStatusId" placeholder="Waiting" interface="popover" [disabled]="true">
+                        @for (status of gameStatusOptions; track status.value) {
+                          <ion-select-option [value]="status.value">{{ status.name }}</ion-select-option>
+                        }
+                      </ion-select>
+                    </ion-item>
+
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Categoria *</ion-label>
+                      <ion-select formControlName="categoryId" placeholder="Selecciona una categoria" interface="popover">
+                        @for (category of categories; track category.id) {
+                          <ion-select-option [value]="category.id">{{ category.name }}</ion-select-option>
+                        }
+                      </ion-select>
+                    </ion-item>
+                  </div>
+                </div>
+
+                <div class="config-section">
+                  <div class="section-header">
+                    <ion-icon name="create-outline"></ion-icon>
+                    <span>Contenido</span>
+                    <span class="mode-pill section-mode-pill" [ngClass]="selectedModeOption.cssClass">
+                      <ion-icon [name]="selectedModeOption.icon"></ion-icon>
+                      {{ selectedModeOption.title }}
+                    </span>
+                  </div>
+                  <div class="content-stack">
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Nombre del juego *</ion-label>
+                      <ion-input formControlName="gameName" placeholder="Ej. Trivia Tecnologica"></ion-input>
+                    </ion-item>
+
+                    @if (sourceMode() === 'prompt') {
+                      <ion-item class="form-item source-field">
+                        <ion-label position="stacked">
+                          <ion-icon name="sparkles-outline"></ion-icon>
+                          Prompt enviado a la IA *
+                        </ion-label>
+                        <ion-textarea
+                          formControlName="prompt"
+                          rows="3"
+                          placeholder="quiero una sesion de 10 preguntas de tecnologia"
+                        ></ion-textarea>
+                      </ion-item>
+                    }
+
+                    @if (sourceMode() === 'pdf') {
+                      <div class="pdf-drop" (click)="pdfInput.click()">
+                        <input
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          hidden
+                          #pdfInput
+                          (change)="onPdfSelected($event)" />
+                        <ion-icon name="cloud-upload-outline" class="pdf-drop-icon"></ion-icon>
+                        @if (selectedPdfFile(); as file) {
+                          <strong class="pdf-name">{{ file.name }}</strong>
+                          <span class="pdf-hint">{{ formatFileSize(file.size) }} — toca para cambiar</span>
+                          <button type="button" class="pdf-remove" (click)="removePdfFile($event)">
+                            <ion-icon name="close-outline"></ion-icon>
+                            Quitar
+                          </button>
+                        } @else {
+                          <strong class="pdf-name">Toca para subir tu PDF *</strong>
+                          <span class="pdf-hint">La IA convertira el documento en preguntas</span>
+                        }
+                      </div>
+                    }
+
+                    @if (sourceMode() === 'url') {
+                      <ion-item class="form-item source-field">
+                        <ion-label position="stacked">
+                          <ion-icon name="globe-outline"></ion-icon>
+                          URL del contenido *
+                        </ion-label>
+                        <ion-input
+                          type="url"
+                          formControlName="sourceUrl"
+                          placeholder="https://misitio.com/articulo"></ion-input>
+                      </ion-item>
+                    }
+                  </div>
+                </div>
+
               </div>
 
-              <ion-item class="form-item source-field" *ngIf="sourceMode() === 'url'">
-                <ion-label position="stacked">
-                  <ion-icon name="globe-outline"></ion-icon>
-                  URL del contenido *
-                </ion-label>
-                <ion-input
-                  type="url"
-                  formControlName="sourceUrl"
-                  placeholder="https://misitio.com/articulo"></ion-input>
-              </ion-item>
+              <!-- Columna derecha -->
+              <div class="form-column">
 
-              <div class="split-grid">
-                <ion-item class="form-item">
-                  <ion-label position="stacked">Juego *</ion-label>
-                  <ion-select formControlName="gameId" placeholder="Selecciona un juego" interface="popover">
-                    <ion-select-option *ngFor="let game of games" [value]="game.id">{{ game.name }}</ion-select-option>
-                  </ion-select>
-                </ion-item>
+                <div class="config-section">
+                  <div class="section-header">
+                    <ion-icon name="help-circle-outline"></ion-icon>
+                    <span>Preguntas</span>
+                  </div>
+                  <div class="form-grid-3">
+                    <ion-item class="form-item compact-item">
+                      <ion-label position="stacked">Numero de preguntas *</ion-label>
+                      <ion-input type="number" formControlName="numberOfQuestions"></ion-input>
+                    </ion-item>
+                    <ion-item class="form-item compact-item">
+                      <ion-label position="stacked">Segundos  *</ion-label>
+                      <ion-input type="number" formControlName="secondsPerQuestion"></ion-input>
+                    </ion-item>
+                    <ion-item class="form-item compact-item">
+                      <ion-label position="stacked">Puntos por pregunta *</ion-label>
+                      <ion-input type="number" formControlName="pointsPerQuestion"></ion-input>
+                    </ion-item>
+                  </div>
+                </div>
 
-                <ion-item class="form-item">
-                  <ion-label position="stacked">Estatus *</ion-label>
-                  <ion-select formControlName="gameStatusId" placeholder="Waiting" interface="popover" [disabled]="true">
-                    <ion-select-option *ngFor="let status of gameStatusOptions" [value]="status.value">
-                      {{ status.name }}
-                    </ion-select-option>
-                  </ion-select>
-                </ion-item>
-              </div>
+                <div class="config-section">
+                  <div class="section-header">
+                    <ion-icon name="trophy-outline"></ion-icon>
+                    <span>Recompensas</span>
+                  </div>
+                  <div class="rewards-grid">
+                    <ion-item class="form-item compact-item">
+                      <ion-label position="stacked">Costo en gemas *</ion-label>
+                      <ion-input type="number" min="0" formControlName="costGems"></ion-input>
+                    </ion-item>
+                    <ion-item class="form-item compact-item">
+                      <ion-label position="stacked">Gemas totales *</ion-label>
+                      <ion-input type="number" min="0" formControlName="totalGems"></ion-input>
+                    </ion-item>
+                    <div class="points-summary">
+                      <span>Total pts.</span>
+                      <strong>{{ totalPossiblePoints }}</strong>
+                    </div>
+                  </div>
+                </div>
 
-              <ion-item class="form-item">
-                <ion-label position="stacked">Nombre del juego *</ion-label>
-                <ion-input formControlName="gameName" placeholder="Ej. Trivia Tecnologica"></ion-input>
-              </ion-item>
-
-              <div class="split-grid stats-grid">
-                <ion-item class="form-item compact-item">
-                  <ion-label position="stacked">Numero de preguntas *</ion-label>
-                  <ion-input type="number" formControlName="numberOfQuestions"></ion-input>
-                </ion-item>
-
-                <ion-item class="form-item compact-item">
-                  <ion-label position="stacked">Puntos por pregunta *</ion-label>
-                  <ion-input type="number" formControlName="pointsPerQuestion"></ion-input>
-                </ion-item>
-
-                <ion-item class="form-item compact-item">
-                  <ion-label position="stacked">Costo en gemas *</ion-label>
-                  <ion-input type="number" min="0" formControlName="costGems"></ion-input>
-                </ion-item>
-
-                <ion-item class="form-item compact-item">
-                  <ion-label position="stacked">Gemas totales *</ion-label>
-                  <ion-input type="number" min="0" formControlName="totalGems"></ion-input>
-                </ion-item>
-              </div>
-
-              <div class="points-summary">
-                <span>Total de puntos posibles</span>
-                <strong>{{ totalPossiblePoints }}</strong>
-              </div>
-
-              <div class="split-grid">
-                <ion-item class="form-item">
-                  <ion-label position="stacked">
+                <div class="config-section">
+                  <div class="section-header">
                     <ion-icon name="calendar-outline"></ion-icon>
-                    Fecha de sesion *
-                  </ion-label>
-                  <ion-input type="date" formControlName="sessionDate"></ion-input>
-                </ion-item>
+                    <span>Programacion</span>
+                  </div>
+                  <div class="form-grid-3">
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Fecha de sesion *</ion-label>
+                      <ion-input type="date" formControlName="sessionDate"></ion-input>
+                    </ion-item>
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Hora de inicio *</ion-label>
+                      <ion-input type="time" formControlName="startTime"></ion-input>
+                    </ion-item>
+                    <ion-item class="form-item">
+                      <ion-label position="stacked">Hora de fin *</ion-label>
+                      <ion-input type="time" formControlName="endTime"></ion-input>
+                    </ion-item>
+                  </div>
+                </div>
 
-                <ion-item class="form-item">
-                  <ion-label position="stacked">
-                    <ion-icon name="time-outline"></ion-icon>
-                    Hora de inicio *
-                  </ion-label>
-                  <ion-input type="time" formControlName="startTime"></ion-input>
-                </ion-item>
               </div>
+            </div>
 
-              <ion-item class="form-item">
-                <ion-label position="stacked">
-                  <ion-icon name="time-outline"></ion-icon>
-                  Hora de fin *
-                </ion-label>
-                <ion-input type="time" formControlName="endTime"></ion-input>
-              </ion-item>
-
-              <div class="field-error" *ngIf="sessionForm.touched && sessionForm.invalid">
+            @if (sessionForm.touched && sessionForm.invalid) {
+              <div class="field-error">
                 Completa todos los campos requeridos antes de generar la vista previa.
               </div>
+            }
 
-              <div class="wizard-actions">
-                <ion-button type="button" fill="outline" color="medium" (click)="goBackStep()">
-                  <ion-icon name="chevron-back-outline" slot="start"></ion-icon>
-                  Atras
-                </ion-button>
+            <div class="wizard-actions">
+              <ion-button type="button" fill="outline" color="medium" (click)="goBackStep()">
+                <ion-icon name="chevron-back-outline" slot="start"></ion-icon>
+                Atras
+              </ion-button>
 
-                <ion-button type="button" color="tertiary" [disabled]="isGeneratingPreview" (click)="generatePreview()">
+              <ion-button type="button" color="tertiary" [disabled]="isGeneratingPreview" (click)="generatePreview()">
+                @if (isGeneratingPreview) {
+                  <ion-spinner name="crescent" slot="start"></ion-spinner>
+                } @else {
                   <ion-icon name="sparkles-outline" slot="start"></ion-icon>
-                  Generar preguntas IA
-                </ion-button>
+                }
+                {{ isGeneratingPreview ? 'Generando preguntas...' : 'Generar preguntas IA' }}
+              </ion-button>
 
-                <ion-button
-                  type="button"
-                  fill="outline"
-                  color="primary"
-                  *ngIf="hasPreview"
-                  (click)="goToStep(3)">
+              @if (hasPreview) {
+                <ion-button type="button" fill="outline" color="primary" (click)="goToStep(3)">
                   Ir a revision
                   <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
                 </ion-button>
-              </div>
+              }
+            </div>
 
-              <div class="created-ref" *ngIf="createdSessionId">
+            @if (createdSessionId) {
+              <div class="created-ref">
                 Ultima sesion creada: {{ createdSessionId }}
               </div>
-            </div>
-          </ion-card-content>
-        </ion-card>
-      </section>
+            }
+          }
+        </section>
+      }
 
       <!-- PASO 3: Revision y guardado -->
-      <section class="step-panel" *ngIf="currentStep() === 3">
-        <div class="review-summary">
-          <div class="summary-chip">
-            <span class="summary-value">{{ questionsFormArray.length }}</span>
-            <span class="summary-label">Preguntas</span>
+      @if (currentStep() === 3) {
+        <section class="step-panel">
+          <div class="review-summary">
+            <div class="summary-chip">
+              <span class="summary-value">{{ questionsFormArray.length }}</span>
+              <span class="summary-label">Preguntas</span>
+            </div>
+            <div class="summary-chip gold">
+              <span class="summary-value">{{ totalPossiblePoints }}</span>
+              <span class="summary-label">Puntos posibles</span>
+            </div>
+            <div class="summary-chip" [ngClass]="selectedModeOption.cssClass">
+              <ion-icon [name]="selectedModeOption.icon"></ion-icon>
+              <span class="summary-label">{{ selectedModeOption.title }}</span>
+            </div>
           </div>
-          <div class="summary-chip gold">
-            <span class="summary-value">{{ totalPossiblePoints }}</span>
-            <span class="summary-label">Puntos posibles</span>
-          </div>
-          <div class="summary-chip" [ngClass]="selectedModeOption.cssClass">
-            <ion-icon [name]="selectedModeOption.icon"></ion-icon>
-            <span class="summary-label">{{ selectedModeOption.title }}</span>
-          </div>
-        </div>
 
-        <div class="layout-grid">
-          <ion-card class="middle-panel">
-            <ion-card-header>
-              <ion-card-title>Listado de preguntas</ion-card-title>
-              <p class="panel-subtitle">Selecciona una pregunta para editar su contenido.</p>
-            </ion-card-header>
-            <ion-card-content>
-              <div class="empty-preview" *ngIf="!hasPreview">
-                <h3>Sin preguntas</h3>
-                <p>Regresa al paso anterior y genera la vista previa.</p>
-              </div>
-
-              <div class="question-list" *ngIf="hasPreview">
-                <button
-                  type="button"
-                  class="question-list-item"
-                  *ngFor="let question of questionsFormArray.controls; let i = index"
-                  [class.is-active]="selectedQuestionIndex === i"
-                  (click)="selectQuestion(i)">
-                  <span class="question-list-id">#{{ getQuestionTempId(i) }}</span>
-                  <span class="question-list-text">{{ question.get('questionText')?.value || 'Pregunta sin texto' }}</span>
-                </button>
-              </div>
-            </ion-card-content>
-          </ion-card>
-
-          <ion-card class="right-panel">
-            <ion-card-header>
-              <ion-card-title>
-                <ion-icon name="game-controller-outline"></ion-icon>
-                Preguntas Generadas
-              </ion-card-title>
-              <p class="panel-subtitle">
-                Revisa las preguntas generadas por la IA. Las respuestas correctas estan marcadas.
-              </p>
-            </ion-card-header>
-
-            <ion-card-content>
-              <div class="empty-preview" *ngIf="!hasPreview">
-                <h3>Sin vista previa aun</h3>
-                <p>Regresa a la configuracion y pulsa Generar preguntas IA.</p>
-              </div>
-
-              <div formArrayName="questions" *ngIf="hasPreview && getSelectedQuestion() as selectedQuestion">
-                <article
-                  class="question-card"
-                  [formGroupName]="selectedQuestionIndex">
-                  <header class="question-head">
-                    <h3>{{ selectedQuestionIndex + 1 }}. Pregunta editable</h3>
-                    <div class="chips-row">
-                      <span class="chip chip-difficulty">{{ getDifficultyLabel(selectedQuestion.get('difficultyLevel')?.value) }}</span>
-                      <span class="chip chip-points">{{ selectedQuestion.get('points')?.value }} pts</span>
-                    </div>
-                  </header>
-
-                  <ion-item class="form-item inline-edit-item">
-                    <ion-label position="stacked">Pregunta</ion-label>
-                    <ion-textarea formControlName="questionText" rows="2"></ion-textarea>
-                  </ion-item>
-
-                  <ion-item class="form-item inline-edit-item">
-                    <ion-label position="stacked">Explicacion</ion-label>
-                    <ion-textarea formControlName="explanation" rows="2"></ion-textarea>
-                  </ion-item>
-
-                  <ion-item class="form-item inline-edit-item">
-                    <ion-label position="stacked">URL de plataforma (imagen)</ion-label>
-                    <ion-input
-                      type="url"
-                      formControlName="platformUrl"
-                      placeholder="https://plataforma.com/recurso.jpg">
-                    </ion-input>
-                  </ion-item>
-
-                  <div class="split-grid">
-                    <ion-item class="form-item inline-edit-item">
-                      <ion-label position="stacked">Dificultad</ion-label>
-                      <ion-input type="number" min="1" formControlName="difficultyLevel"></ion-input>
-                    </ion-item>
-                    <ion-item class="form-item inline-edit-item">
-                      <ion-label position="stacked">Puntos</ion-label>
-                      <ion-input type="number" min="1" formControlName="points"></ion-input>
-                    </ion-item>
+          <div class="layout-grid">
+            <ion-card class="middle-panel">
+              <ion-card-header>
+                <ion-card-title>Listado de preguntas</ion-card-title>
+                <p class="panel-subtitle">Selecciona una pregunta para editar su contenido.</p>
+              </ion-card-header>
+              <ion-card-content>
+                @if (!hasPreview) {
+                  <div class="empty-preview">
+                    <h3>Sin preguntas</h3>
+                    <p>Regresa al paso anterior y genera la vista previa.</p>
                   </div>
-
-                  <div class="options-list" formArrayName="options">
-                    <div class="option-item" *ngFor="let option of getSelectedQuestionOptionsControls(); let oi = index" [formGroupName]="oi" [class.is-correct]="option.get('isCorrect')?.value">
-                      <ion-input formControlName="optionText" placeholder="Respuesta"></ion-input>
+                } @else {
+                  <div class="question-list">
+                    @for (question of questionsFormArray.controls; track $index; let i = $index) {
                       <button
                         type="button"
-                        class="toggle-correct-btn"
-                        [class.is-correct]="option.get('isCorrect')?.value"
-                        (click)="toggleOptionCorrect(selectedQuestionIndex, oi)">
-                        {{ option.get('isCorrect')?.value ? 'Correcta' : 'Incorrecta' }}
+                        class="question-list-item"
+                        [class.is-active]="selectedQuestionIndex === i"
+                        (click)="selectQuestion(i)">
+                        <span class="question-list-id">#{{ getQuestionTempId(i) }}</span>
+                        <span class="question-list-text">{{ question.get('questionText')?.value || 'Pregunta sin texto' }}</span>
                       </button>
+                    }
+                  </div>
+                }
+              </ion-card-content>
+            </ion-card>
+
+            <ion-card class="right-panel">
+              <ion-card-header>
+                <ion-card-title>
+                  <ion-icon name="game-controller-outline"></ion-icon>
+                  Preguntas Generadas
+                </ion-card-title>
+                <p class="panel-subtitle">
+                  Revisa las preguntas generadas por la IA. Las respuestas correctas estan marcadas.
+                </p>
+              </ion-card-header>
+
+              <ion-card-content>
+                @if (!hasPreview) {
+                  <div class="empty-preview">
+                    <h3>Sin vista previa aun</h3>
+                    <p>Regresa a la configuracion y pulsa Generar preguntas IA.</p>
+                  </div>
+                } @else if (getSelectedQuestion(); as selectedQuestion) {
+                  <article class="question-card" [formGroup]="selectedQuestion">
+                    <header class="question-head">
+                      <h3>{{ selectedQuestionIndex + 1 }}. Pregunta editable</h3>
+                      <div class="chips-row">
+                        <span class="chip chip-difficulty">{{ getDifficultyLabel(selectedQuestion.get('difficultyLevel')?.value) }}</span>
+                        <span class="chip chip-points">{{ selectedQuestion.get('points')?.value }} pts</span>
+                      </div>
+                    </header>
+
+                    <ion-item class="form-item inline-edit-item">
+                      <ion-label position="stacked">Pregunta</ion-label>
+                      <ion-textarea formControlName="questionText" rows="2"></ion-textarea>
+                    </ion-item>
+
+                    <ion-item class="form-item inline-edit-item">
+                      <ion-label position="stacked">Explicacion</ion-label>
+                      <ion-textarea formControlName="explanation" rows="2"></ion-textarea>
+                    </ion-item>
+
+                    <!-- <ion-item class="form-item inline-edit-item">
+                      <ion-label position="stacked">URL de plataforma (imagen)</ion-label>
+                      <ion-input
+                        type="url"
+                        formControlName="platformUrl"
+                        placeholder="https://plataforma.com/recurso.jpg">
+                      </ion-input>
+                    </ion-item> -->
+
+                    <div class="split-grid">
+                      <ion-item class="form-item inline-edit-item">
+                        <ion-label position="stacked">Dificultad</ion-label>
+                        <ion-input type="number" min="1" formControlName="difficultyLevel"></ion-input>
+                      </ion-item>
+                      <ion-item class="form-item inline-edit-item">
+                        <ion-label position="stacked">Puntos</ion-label>
+                        <ion-input type="number" min="1" formControlName="points"></ion-input>
+                      </ion-item>
                     </div>
-                  </div>
 
-                  <div class="explanation-box">
-                    <strong>Regla de validacion:</strong>
-                    <p>Define al menos una respuesta correcta por pregunta.</p>
-                  </div>
-                </article>
-              </div>
-            </ion-card-content>
-          </ion-card>
-        </div>
+                    <div class="options-list" formArrayName="options">
+                      @for (option of getSelectedQuestionOptionsControls(); track $index; let oi = $index) {
+                        <div class="option-item" [formGroupName]="oi" [class.is-correct]="option.get('isCorrect')?.value">
+                          <ion-input formControlName="optionText" placeholder="Respuesta"></ion-input>
+                          <button
+                            type="button"
+                            class="toggle-correct-btn"
+                            [class.is-correct]="option.get('isCorrect')?.value"
+                            (click)="toggleOptionCorrect(selectedQuestionIndex, oi)">
+                            {{ option.get('isCorrect')?.value ? 'Correcta' : 'Incorrecta' }}
+                          </button>
+                        </div>
+                      }
+                    </div>
 
-        <div class="wizard-actions">
-          <ion-button type="button" fill="outline" color="medium" (click)="goBackStep()">
-            <ion-icon name="chevron-back-outline" slot="start"></ion-icon>
-            Atras
-          </ion-button>
+                    <div class="explanation-box">
+                      <strong>Regla de validacion:</strong>
+                      <p>Define al menos una respuesta correcta por pregunta.</p>
+                    </div>
+                  </article>
+                }
+              </ion-card-content>
+            </ion-card>
+          </div>
 
-          <ion-button type="button" fill="outline" color="medium" (click)="clearPreview(); goToStep(2)">
-            <ion-icon name="close-outline" slot="start"></ion-icon>
-            Descartar preguntas
-          </ion-button>
+          <div class="wizard-actions">
+            <ion-button type="button" fill="outline" color="medium" (click)="goBackStep()">
+              <ion-icon name="chevron-back-outline" slot="start"></ion-icon>
+              Atras
+            </ion-button>
 
-          <ion-button type="button" color="primary" [disabled]="isLoading || !hasPreview" (click)="onSubmit()">
-            <ion-icon name="save-outline" slot="start"></ion-icon>
-            Guardar sesion
-          </ion-button>
-        </div>
-      </section>
+            <ion-button type="button" fill="outline" color="medium" (click)="clearPreview(); goToStep(2)">
+              <ion-icon name="close-outline" slot="start"></ion-icon>
+              Descartar preguntas
+            </ion-button>
+
+            <ion-button type="button" color="primary" [disabled]="isLoading || !hasPreview" (click)="onSubmit()">
+              <ion-icon name="save-outline" slot="start"></ion-icon>
+              Guardar sesion
+            </ion-button>
+          </div>
+        </section>
+      }
     </div>
   </section>
 </ion-content>
 
 <ion-loading [isOpen]="isLoading" message="Creando sesión completa..."></ion-loading>
-<ion-loading [isOpen]="isGeneratingPreview" message="Generando preguntas con IA..."></ion-loading>
+<ion-loading
+  [isOpen]="isGeneratingPreview"
+  spinner="crescent"
+  message="La IA esta generando tus preguntas...<br/>Esto puede tardar varios minutos, no cierres la pantalla."
+  [backdropDismiss]="false"></ion-loading>
