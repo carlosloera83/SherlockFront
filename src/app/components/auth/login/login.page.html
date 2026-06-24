@@ -2,9 +2,10 @@
   <div class="login-shell">
     <div class="login-card">
       <div class="brand-block">
-        <img src="assets/icon/favicon.png" alt="Sherlock" class="brand-logo" />
+        <img src="assets/Images/LogoSH.png" alt="Sherlock" class="brand-logo" />
         <h1>SHERLOCK</h1>
         <p>Inicia sesión para entrar al juego</p>
+        <small class="login-version">vers {{ appVersion }}</small>
       </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>
@@ -21,12 +22,12 @@
             </ion-input>
           </ion-item>
 
-          @if (emailControl?.touched && emailControl?.invalid) {
+          @if (emailControl.touched && emailControl.invalid) {
             <ion-text color="danger" class="error-text">
-              @if (emailControl?.errors?.['required']) {
+              @if (emailControl.errors?.['required']) {
                 <p>El correo es obligatorio.</p>
               }
-              @if (emailControl?.errors?.['email']) {
+              @if (emailControl.errors?.['email']) {
                 <p>Ingresa un correo válido.</p>
               }
             </ion-text>
@@ -52,9 +53,9 @@
             </button>
           </ion-item>
 
-          @if (passwordControl?.touched && passwordControl?.invalid) {
+          @if (passwordControl.touched && passwordControl.invalid) {
             <ion-text color="danger" class="error-text">
-              @if (passwordControl?.errors?.['required']) {
+              @if (passwordControl.errors?.['required']) {
                 <p>La contraseña es obligatoria.</p>
               }
             </ion-text>

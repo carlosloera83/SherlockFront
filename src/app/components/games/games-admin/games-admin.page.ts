@@ -5,23 +5,7 @@ import { Router } from '@angular/router';
 import {
   IonContent,
   IonButton,
-  IonInput,
-  IonTextarea,
-  IonItem,
-  IonLabel,
-  IonSelect,
-  IonSelectOption,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonLoading,
-  IonAlert,
-  IonToggle,
   IonIcon,
-  IonToolbar,
-  IonButtons,
-  IonTitle,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { checkmarkOutline, closeOutline, addOutline, calendarOutline } from 'ionicons/icons';
@@ -37,23 +21,7 @@ import { GameListComponent } from './game-list/game-list.component';
     ReactiveFormsModule,
     IonContent,
     IonButton,
-    IonInput,
-    IonTextarea,
-    IonItem,
-    IonLabel,
-    IonSelect,
-    IonSelectOption,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardContent,
-    IonLoading,
-    IonAlert,
-    IonToggle,
     IonIcon,
-    IonToolbar,
-    IonButtons,
-    IonTitle,
     GameListComponent,
   ],
   templateUrl: './games-admin.page.html',
@@ -68,12 +36,7 @@ export class GamesAdminPage implements OnInit {
   isSuccess = false;
 
   // Mock game types - replace with actual API call if needed
-  gameTypes = [
-    { id: '3fa85f64-5717-4562-b3fc-2c963f66afa6', name: 'Action' },
-    { id: '3fa85f64-5717-4562-b3fc-2c963f66afa7', name: 'Strategy' },
-    { id: '3fa85f64-5717-4562-b3fc-2c963f66afa8', name: 'Puzzle' },
-  ];
-
+ 
   showForm = false;
 
   constructor(

@@ -1,95 +1,414 @@
-<ion-content class="page-content" [fullscreen]="true">
-  <section class="games-shell">
-    <header class="games-header">
-      <p>Explora las partidas activas y entra al modo que mejor se adapte a tu estrategia.</p>
-    </header>
+<ion-content class="lobby-content" [fullscreen]="true" [scrollY]="false">
+  <section class="lobby-shell combat-shell">
+    @if (!isLoading) {
+      <div class="combat-frame">
+        <aside class="combat-sidebar">
+          <article class="combat-profile-card" (click)="$event.stopPropagation()">
+            <button type="button" class="combat-profile-card__avatar" (click)="toggleUserMenu($event)">
+              <img
+                class="combat-profile-card__avatar-photo"
+                [src]="profileAvatarUrl"
+                [alt]="userDisplayName"
+                (error)="onProfileAvatarError()" />
+              @if (profileAvatarHasError) {
+                <span class="combat-profile-card__avatar-initial">{{ userInitial }}</span>
+              }
+              <img class="combat-profile-card__avatar-frame" src="assets/Images/principal/Marco_Dorado2.png" alt="" aria-hidden="true" />
+            </button>
 
-    <!-- Loading -->
-    <div *ngIf="isLoading" class="state-center">
-      <ion-spinner name="crescent" color="light"></ion-spinner>
-      <p>Cargando partidas...</p>
-    </div>
-
-    <!-- Error -->
-    <div *ngIf="!isLoading && errorMessage" class="state-center state-center--error">
-      <p>{{ errorMessage }}</p>
-    </div>
-
-    <!-- Empty -->
-    <div *ngIf="!isLoading && !errorMessage && games.length === 0" class="state-center">
-      <p>No hay partidas activas en este momento.</p>
-    </div>
-
-    <!-- Game list -->
-    <div class="games-grid" *ngIf="!isLoading && !errorMessage && games.length > 0">
-      <article
-        class="game-card"
-        *ngFor="let game of games"
-        [class.game-card--winner-flash]="isWinnerFlashing(game.session)"
-        [style.background-image]="game.backgroundImage">
-        <div class="game-card__overlay">
-          <div class="game-card__top">
-            <span class="status-badge"
-              [class.status-badge--warning]="game.statusTone === 'warning'"
-              [class.status-badge--success]="game.statusTone === 'success'"
-              [class.status-badge--neutral]="game.statusTone === 'neutral'">
-              {{ game.status }}
-            </span>
-
-            <div class="game-copy">
-              <h2>{{ game.title }}</h2>
-              <p>{{ game.subtitle }}</p>
-              <p>{{ getSessionInfoText(game.session) }}</p>
-            </div>
-
-            <div class="winner-spotlight">
-              <span class="winner-spotlight__icon" aria-hidden="true">&#127942;</span>
-              <div class="winner-spotlight__copy">
-                <span class="winner-spotlight__label">PRIMER LUGAR</span>
-                <span class="winner-spotlight__name">{{ getWinnerDisplayName(game.session) }}</span>
-              </div>
-              <span class="winner-spotlight__points">{{ getWinnerPoints(game.session) }} PTS</span>
-            </div>
-
-          </div>
-
-          <div class="game-card__bottom">
-            <div class="meta-cluster meta-cluster--left">
-              <div class="meta-item">
-                <span class="meta-glyph meta-glyph--players" aria-hidden="true"></span>
-                <span>{{ game.players }}</span>
-              </div>
-
-              <div class="meta-item">
-                <span class="meta-glyph meta-glyph--energy" aria-hidden="true"></span>
-                <span>{{ game.energy }}</span>
+            <div class="combat-profile-card__copy">
+              <strong class="combat-profile-card__name">{{ userDisplayName }}</strong>
+              <span class="combat-profile-card__lvl">Nv.{{ profileLevel }}</span>
+              <small>Detective Master</small>
+              <div class="combat-profile-card__xp-row">
+                <div class="combat-profile-card__progress">
+                  <span [style.width.%]="getProfileProgressPercent()"></span>
+                </div>
+                <span class="combat-profile-card__xp-pct">{{ getProfileProgressPercent() | number:'1.0-0' }}%</span>
               </div>
             </div>
 
-            <div class="meta-cluster meta-cluster--right">
-              <div class="meta-item meta-item--highlight">
-                <span class="meta-glyph meta-glyph--trophy" aria-hidden="true"></span>
-                <span>{{ game.completion }}</span>
+            @if (isUserMenuOpen) {
+              <div class="topbar-user__menu topbar-user__menu--profile">
+                <button type="button" (click)="goToProfile($event)">Perfil</button>
+                <button type="button" class="topbar-user__logout" (click)="logout($event)">Salir</button>
               </div>
+            }
+          </article>
 
-              <div class="meta-item meta-item--time">
-                <span class="meta-glyph meta-glyph--time" aria-hidden="true"></span>
-                <span>{{ game.schedule }}</span>
-              </div>
+          <!-- <button type="button" class="combat-sidebar__cta">Juega y Gana</button> -->
+
+          <div class="sidebar-stat-pills" aria-label="Estadísticas del jugador">
+            <div class="sidebar-stat-pill sidebar-stat-pill--wins">
+              <strong>{{ gamesWon | number }}</strong>
+              <small>Victorias</small>
+            </div>
+            <div class="sidebar-stat-pill sidebar-stat-pill--streak">
+              <strong>{{ currentStreak }}</strong>
+              <small>Racha</small>
+            </div>
+            <div class="sidebar-stat-pill sidebar-stat-pill--rank">
+              <strong>#{{ dashboardStats?.globalRank || profileLevel }}</strong>
+              <small>Ranking</small>
             </div>
           </div>
-          <button
-            class="drop-button"
-            [class.drop-button--joined]="game.isUserInGame && !isContinueAction(game.session)"
-            [class.drop-button--ready]="isContinueAction(game.session)"
-            type="button"
-            [style.background]="isContinueAction(game.session) ? 'linear-gradient(90deg, #22c55e 0%, #14b8a6 55%, #0ea5e9 100%)' : (game.isUserInGame ? '#1e293b' : game.ctaGradient)"
-            (click)="openGame(game)"
-            [disabled]="isActionDisabled(game.session) || joiningGameSessionId === game.session.gameSessionId">
-            {{ joiningGameSessionId === game.session.gameSessionId ? 'UNIENDOTE...' : getActionButtonText(game.session) }}
-          </button>
+
+          <section class="combat-mode-buttons" aria-label="Selecciona modalidad">
+            <header class="combat-mode-buttons__header">Selecciona una modalidad</header>
+
+            <button
+              type="button"
+              class="combat-mode-buttons__item combat-mode-buttons__item--purple combat-mode-buttons__item--active"
+              aria-pressed="true">
+              <ion-icon name="pulse-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
+              <span class="combat-mode-btn__body">
+                <span class="combat-mode-btn__label">Contra reloj</span>
+                <span class="combat-mode-btn__sub">Responde antes que el tiempo acabe</span>
+              </span>
+              <span class="combat-mode-btn__badge combat-mode-btn__badge--live">LIVE</span>
+            </button>
+
+            <!-- <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--blue">
+              <ion-icon name="game-controller-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
+              <span class="combat-mode-btn__body">
+                <span class="combat-mode-btn__label">Battle royale</span>
+                <span class="combat-mode-btn__sub">El último detective en pie gana</span>
+              </span>
+              <span class="combat-mode-btn__badge combat-mode-btn__badge--new">NUEVO</span>
+            </button> -->
+
+            <!-- <button type="button" class="combat-mode-buttons__item combat-mode-buttons__item--green">
+              <ion-icon name="trophy-outline" class="combat-mode-btn__icon" aria-hidden="true"></ion-icon>
+              <span class="combat-mode-btn__body">
+                <span class="combat-mode-btn__label">Por puntaje</span>
+                <span class="combat-mode-btn__sub">Acumula más pts que tus rivales</span>
+              </span>
+            </button> -->
+          </section>
+
+          <section class="sidebar-pending-list" aria-label="Partidas en curso">
+            <header class="sidebar-pending-list__header">Partidas en curso</header>
+
+            @for (game of sidebarPendingGames; track game.session.gameSessionId) {
+              <article class="sidebar-pending-card">
+                <div class="sidebar-pending-card__copy">
+                  <strong>{{ game.title }}</strong>
+                  <small>{{ getSidebarPendingLabel(game) }}</small>
+                </div>
+
+                <div class="sidebar-pending-card__meta">
+                  <span>{{ getRoomParticipantsText(game) }}</span>
+                  <span>{{ getRoomCountdownText(game) }}</span>
+                </div>
+
+                <div class="sidebar-pending-card__ranking">
+                  <span class="sidebar-pending-card__leader">
+                    1º {{ getSidebarLeaderName(game) }} - {{ getSidebarLeaderPoints(game) | number }} pts
+                  </span>
+                  @if (!isSidebarCurrentUserPointsLoading(game)) {
+                    <span class="sidebar-pending-card__me">
+                      Yo: {{ (getSidebarCurrentUserPoints(game) ?? 0) | number }} pts
+                    </span>
+                  } @else {
+                    <span class="sidebar-pending-card__me">
+                      Yo: cargando...
+                    </span>
+                  }
+                </div>
+
+                <button type="button" class="sidebar-pending-card__ranking-btn" (click)="openSidebarRanking(game)">
+                  Ver ranking
+                </button>
+              </article>
+            } @empty {
+              <p class="sidebar-pending-list__empty">
+                No hay partidas bloqueadas en este momento.
+              </p>
+            }
+          </section>
+
+          <!-- <section class="combat-dummy-chat" aria-label="Chat de sala dummy">
+            <img class="combat-dummy-chat__frame" src="assets/Images/principal/Chat.png" alt="" aria-hidden="true" />
+
+            <div class="combat-dummy-chat__content">
+
+
+              <div class="combat-dummy-chat__messages">
+                <p><strong>DetectiveAna:</strong> ¿Quien se apunta a Geografia?</p>
+                <p><strong>ClueHunter:</strong> Yo entro en 2 min.</p>
+                <p><strong>MysteryMaster:</strong> Sala lista, vamos.</p>
+              </div>
+
+              <div class="combat-dummy-chat__composer">
+                <input type="text" value="Escribe un mensaje..." readonly aria-label="Mensaje dummy" />
+                <button type="button" disabled>Enviar</button>
+              </div>
+            </div>
+          </section> -->
+        </aside>
+
+        <div class="combat-main">
+          <header class="combat-header">
+            <!-- <div class="combat-header__title-wrap">
+              <img src="assets/Images/LogoSH.png" alt="Sherlock" class="combat-header__logo" />
+              <span class="combat-header__hex"></span>
+              <h1>Salas de combate</h1>
+            </div> -->
+
+            <div class="combat-header__center-wrap" aria-hidden="true">
+              <img src="assets/Images/principal/barraSuperior.png" alt="" class="combat-header__center-bar" />
+            </div>
+
+            <div class="combat-header__status-wrap">
+              <button
+                type="button"
+                class="combat-header__sound combat-header__sound--icon"
+                (click)="toggleBackgroundMusic()"
+                [attr.aria-label]="isMusicEnabled ? 'Desactivar musica' : 'Activar musica'"
+                [title]="isMusicEnabled ? 'Musica encendida' : 'Musica apagada'">
+                <span class="combat-header__sound-icon" aria-hidden="true">&#9835;</span>
+              </button>
+            </div>
+
+            <!-- <div class="combat-header__status-wrap">
+              <span class="combat-header__status" [class.combat-header__status--offline]="!isSignalRConnected()">
+                {{ isSignalRConnected() ? 'En vivo' : 'Sincronizando' }}
+              </span>
+              <button type="button" class="combat-header__sound" (click)="toggleBackgroundMusic()">
+                {{ isMusicEnabled ? 'Musica on' : 'Musica off' }}
+              </button>
+              <article class="combat-online-pill">
+                <span class="combat-online-pill__icon"></span>
+                <strong>{{ onlinePlayersBadgeCount }} jugadores en linea</strong>
+              </article>
+            </div> -->
+          </header>
+
+          <div class="combat-stats-bar combat-stats-bar--hud combat-stats-bar--topright">
+            @for (stat of topHudStats | slice:0:4; track stat.key) {
+              <div
+                class="combat-stat"
+                [attr.title]="stat.label + ': ' + stat.value">
+                <span class="combat-stat__icon" aria-hidden="true">
+                  <ion-icon [name]="stat.icon"></ion-icon>
+                </span>
+                <span class="combat-stat__value">{{ stat.value }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="combat-layout">
+            <main class="combat-center-panel">
+              @if (showBoardWarning) {
+                <p class="retro-board-warning">
+                  {{ errorMessage }}
+                </p>
+              }
+
+              @if (!showBoardWarning && featuredGames.length === 0) {
+                <div class="empty-state-cta">
+                  <div class="empty-state-cta__icon" aria-hidden="true">🔍</div>
+                  <h3 class="empty-state-cta__title">Sin partidas activas</h3>
+                  <p class="empty-state-cta__sub">Sé el primero en abrir una sala y desafía al resto de detectives.</p>
+                  <div class="empty-state-cta__online">
+                    <span class="empty-state-cta__dot" aria-hidden="true"></span>
+                    <span>{{ onlinePlayersBadgeCount }} detectives en línea</span>
+                  </div>
+                  <button type="button" class="empty-state-cta__btn">
+                    <ion-icon name="game-controller-outline" aria-hidden="true"></ion-icon>
+                    Crear sala
+                  </button>
+                </div>
+              }
+
+              <section class="room-list">
+                @for (game of featuredGames; track game.session.gameSessionId) {
+                  <article
+                    class="room-card"
+                    [ngClass]="getRoomThemeClass(game)"
+                    [class.room-card--leader-flash]="isWinnerFlashing(game.session)">
+                    <div
+                      class="room-card__bg"
+                      [style.background-image]="'url(' + getRoomCardArtUrl(game) + ')'"
+                      aria-hidden="true"></div>
+                    <span class="room-card__sheen" aria-hidden="true"></span>
+                    <span class="room-card__corner room-card__corner--tr" aria-hidden="true"></span>
+                    <span class="room-card__corner room-card__corner--bl" aria-hidden="true"></span>
+
+                    <header class="room-card__badges">
+                      @if (getRoomRarityLabel(game)) {
+                        <span class="room-card__rarity">{{ getRoomRarityLabel(game) }}</span>
+                      }
+                      @if (isLiveGame(game)) {
+                        <span class="room-card__flag">
+                          <span class="room-card__rec-dot" aria-hidden="true"></span>
+                          ¡En vivo!
+                        </span>
+                      }
+                    </header>
+
+                    <div class="room-card__body">
+                      <h3 class="room-card__title">{{ game.title }}</h3>
+
+                      <div class="room-card__stats">
+                        <div class="room-card__stat room-card__stat--cost">
+                          <span>Costo</span>
+                          <strong>{{ getRoomCostGems(game) | number }} 💎</strong>
+                        </div>
+                        <div class="room-card__stat">
+                          <span>Tiempo restante</span>
+                          <strong>{{ getRoomCountdownText(game) }}</strong>
+                        </div>
+                        <div class="room-card__stat">
+                          <span>Líder</span>
+                          <strong>{{ getRoomLeaderText(game) }}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <footer class="room-card__footer">
+                      <span class="room-card__price">
+                        <span class="room-card__price-label">Premio</span>
+                        <span class="room-card__price-gem" aria-hidden="true">💎</span>
+                        {{ getRoomPrizeGems(game) | number }}
+                      </span>
+
+                      <button
+                        type="button"
+                        class="room-card__enter-btn"
+                        [ngClass]="{ 'room-card__enter-btn--gold': game.session.canUserEnterGame }"
+                        [disabled]="isBoardActionDisabled(game)"
+                        (click)="game.session.canUserEnterGame ? handleBoardAction(game) : (game.session.canStart ? handleBoardAction(game) : openRankingModal(game.session))">
+                        {{ game.session.canUserEnterGame ? 'JUGAR' : 'Ver ranking' }}
+                      </button>
+
+                      @if (getRoomThemeClass(game).includes('disabled')) {
+                        <p class="room-card__status">
+                          {{ getBoardStatusText(game) === 'Lleno' ? 'Sala completa' : 'Partida en curso' }}
+                        </p>
+                      }
+                    </footer>
+                  </article>
+                }
+              </section>
+            </main>
+
+            <!-- right panel removed per UX request -->
+          </div>
+
+          <footer class="combat-footer">
+            <div class="world-event-ticker">
+              <span class="world-event-ticker__pulse" aria-hidden="true"></span>
+              <span class="world-event-ticker__label">EVENTO GLOBAL</span>
+              <p class="world-event-ticker__message">{{ worldMessage }}</p>
+              <span class="world-event-ticker__countdown">
+                <ion-icon name="pulse-outline" aria-hidden="true"></ion-icon>
+                {{ eventCountdown }}
+              </span>
+            </div>
+          </footer>
         </div>
-      </article>
-    </div>
+      </div>
+    } @else {
+      <div class="state-center">
+        <ion-spinner name="crescent" color="light"></ion-spinner>
+        <p>Cargando partidas...</p>
+      </div>
+    }
+
+    @if (showRankingModal) {
+      <section class="ranking-modal-backdrop" aria-live="polite">
+        <article class="ranking-modal" role="dialog" aria-modal="true" aria-label="Ranking final">
+          <header class="ranking-modal__header">
+            <h3>{{ rankingSessionTitle }}</h3>
+            <button class="ranking-modal__close" type="button" (click)="closeRankingModal()">Cerrar</button>
+          </header>
+
+          @if (isRankingLoading) {
+            <div class="ranking-modal__body">
+              <ion-spinner name="crescent" color="light"></ion-spinner>
+              <p>Cargando ranking...</p>
+            </div>
+          } @else if (rankingErrorMessage) {
+            <div class="ranking-modal__body">
+              <p>{{ rankingErrorMessage }}</p>
+            </div>
+          }
+
+          @if (!isRankingLoading && !rankingErrorMessage && rankingPlayers.length > 0) {
+            <div class="ranking-table">
+              <div class="ranking-row ranking-row--head">
+                <span>Posicion</span>
+                <span>Avatar</span>
+                <span>Nombre</span>
+                <span>Puntos</span>
+              </div>
+
+              @for (player of rankingPlayers; track player.position) {
+                <div class="ranking-row" [class.ranking-row--current]="player.isCurrentUser">
+                  <span class="ranking-position">{{ player.position }}</span>
+                  <span class="ranking-avatar">{{ player.avatar }}</span>
+                  <span class="ranking-name">{{ player.name }}</span>
+                  <span class="ranking-points">{{ player.points }}</span>
+                </div>
+              }
+            </div>
+          }
+        </article>
+      </section>
+    }
+
+    @if (showPendingRewardModal && activePendingReward) {
+      <section class="reward-modal-backdrop" aria-live="polite">
+        <article class="reward-modal" role="dialog" aria-modal="true" aria-label="Recompensa pendiente">
+          <header class="reward-modal__header">
+            <h3>¡Tienes una recompensa pendiente!</h3>
+          </header>
+
+          <div class="reward-modal__body">
+            <div class="reward-modal__case">
+              <span>Partida</span>
+              <strong>{{ activePendingReward.gameSessionName }}</strong>
+            </div>
+
+            <div class="reward-modal__stats">
+              <article>
+                <span>Gemas ganadas</span>
+                <strong>+{{ activePendingReward.gemsEarned | number }} 💎</strong>
+              </article>
+              <article>
+                <span>Puntos ganados</span>
+                <strong>+{{ activePendingReward.pointsEarned | number }} pts</strong>
+              </article>
+            </div>
+
+            @if (activePendingReward.isWinner) {
+              <p class="reward-modal__status">Ganaste esta partida. Reclama para reflejarlo en tu perfil.</p>
+            }
+          </div>
+
+          <footer class="reward-modal__actions">
+            <button
+              type="button"
+              class="reward-modal__btn reward-modal__btn--primary"
+              [disabled]="isClaimingPendingReward"
+              (click)="claimActivePendingReward()">
+              @if (isClaimingPendingReward) {
+                <ion-spinner name="crescent"></ion-spinner>
+              }
+              <span>{{ isClaimingPendingReward ? 'Reclamando...' : 'Reclamar' }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="reward-modal__btn reward-modal__btn--ghost"
+              [disabled]="isClaimingPendingReward"
+              (click)="dismissPendingRewardModal()">
+              Más tarde
+            </button>
+          </footer>
+        </article>
+      </section>
+    }
   </section>
 </ion-content>

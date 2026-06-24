@@ -1,0 +1,90 @@
+<ion-content class="lobby-content" [fullscreen]="true">
+  <section class="lobby-shell">
+    <div *ngIf="isCountdownActive" class="countdown-overlay" aria-live="polite">
+      <div class="countdown-spinner" role="status" aria-label="Cuenta regresiva para iniciar">
+        <span>{{ getCountdownLabel() }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="state-center">
+      <ion-spinner name="crescent" color="light"></ion-spinner>
+      <p>Cargando lobby...</p>
+    </div>
+
+    <div *ngIf="!isLoading && errorMessage" class="state-center state-center--error">
+      <p>{{ errorMessage }}</p>
+      <button class="secondary-button" type="button" (click)="goBack()">Volver a partidas</button>
+    </div>
+
+    <ng-container *ngIf="!isLoading && !errorMessage && session">
+      <header class="lobby-header">
+        <h1>{{ headerTitle }}</h1>
+        <p>{{ headerSubtitle }}</p>
+      </header>
+
+      <article class="lobby-panel">
+        <div class="panel-headline">
+          <span class="status-badge" [class.status-badge--success]="canStartGame()" [class.status-badge--warning]="!canStartGame()">
+            {{ canStartGame() ? 'LISTOS' : 'EN LOBBY' }}
+          </span>
+          <h2>Jugadores en el lobby</h2>
+        </div>
+
+        <div class="players-table-wrap">
+          <table class="players-table">
+            <thead>
+              <tr>
+                <th>Avatar</th>
+                <th>Nombre</th>
+                <th>Estatus</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let player of lobbyPlayers; trackBy: trackBySlot"
+                [class.players-table__row--waiting]="player.status === 'ESPERANDO'"
+                [class.players-table__row--current]="player.isCurrentUser">
+                <td class="players-table__avatar-cell">
+                  <span class="player-avatar">{{ player.avatar }}</span>
+                </td>
+                <td class="players-table__name-cell">
+                  <strong>{{ player.name }}</strong>
+                  <span>{{ player.role }}</span>
+                </td>
+                <td class="players-table__status-cell">
+                  <span
+                    class="player-badge"
+                    [class.player-badge--joined]="player.status === 'UNIDO'"
+                    [class.player-badge--waiting]="player.status === 'ESPERANDO'">
+                    {{ player.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="lobby-status">
+          <p class="lobby-status__count">{{ getPlayersSummary() }}</p>
+          <p class="lobby-status__message" [class.lobby-status__message--ready]="canStartGame()">
+            {{ readinessMessage }}
+          </p>
+        </div>
+
+        <div class="lobby-actions">
+          <button class="secondary-button" type="button" (click)="goBack()" [disabled]="isLeavingLobby">
+            {{ isLeavingLobby ? 'SALIENDO...' : 'Salir' }}
+          </button>
+          <button
+            class="primary-button"
+            type="button"
+            (click)="startGame()"
+            [disabled]="!canStartGame() || isStarting">
+            {{ isStarting ? 'ABRIENDO...' : 'COMENZAR PARTIDA' }}
+          </button>
+        </div>
+      </article>
+    </ng-container>
+  </section>
+
+</ion-content>

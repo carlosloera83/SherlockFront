@@ -6,8 +6,43 @@ export interface CreateGameSessionFullRequest {
   sessionDate: string;
   scheduledStartTime: string;
   scheduledEndTime: string;
+  costGems: number;
+  totalGems: number;
+  categoryId: string;
   questions: CreateGameSessionFullQuestionRequest[];
   options: CreateGameSessionFullOptionRequest[];
+}
+
+export interface CreateGameSessionAiPreviewRequest {
+  prompt: string;
+  numberOfQuestions: number;
+  pointsPerQuestion: number;
+}
+
+export interface CreateGameSessionAiPreviewFromUrlRequest {
+  url: string;
+  numberOfQuestions: number;
+  pointsPerQuestion: number;
+}
+
+export type QuestionGenerationMode = 'prompt' | 'pdf' | 'url';
+
+export interface AiSessionPreviewOption {
+  optionText: string;
+  isCorrect: boolean;
+}
+
+export interface AiSessionPreviewQuestion {
+  questionText: string;
+  explanation: string;
+  platformUrl?: string | null;
+  difficultyLevel: number;
+  points: number;
+  options: AiSessionPreviewOption[];
+}
+
+export interface CreateGameSessionAiPreviewResponse {
+  questions: AiSessionPreviewQuestion[];
 }
 
 export interface GameStatusCatalogOption {
@@ -28,10 +63,12 @@ export interface CreateGameSessionFullQuestionRequest {
   tempQuestionId: number;
   questionText: string;
   explanation: string;
+  platformUrl?: string | null;
   difficultyLevel: number;
   questionOrder: number;
   points: number;
   isRequired: boolean;
+  timeLimitSeconds: number;
 }
 
 export interface CreateGameSessionFullOptionRequest {
@@ -42,6 +79,11 @@ export interface CreateGameSessionFullOptionRequest {
 }
 
 export interface GameSummary {
+  id: string;
+  name: string;
+}
+
+export interface Category {
   id: string;
   name: string;
 }

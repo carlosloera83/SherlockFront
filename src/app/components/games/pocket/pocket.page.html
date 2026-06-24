@@ -1,35 +1,21 @@
 <ion-content class="pocket-content" [fullscreen]="false" [scrollY]="false" [forceOverscroll]="false">
   <section class="pocket-shell">
-    <header class="match-header">
-      <div class="match-brand">
-        <h1>Sherlock</h1>
-        <p>Modo supervivencia</p>
-      </div>
-      <div class="match-user">
-        <span>Jugador</span>
-        <strong>Nivel 1</strong>
+
+    <!-- Compact top HUD -->
+    <header class="game-hud">
+      <img src="assets/Images/principal/barraSuperior.png" alt="Barra Superior" class="game-hud__banner" />
+      <div class="game-hud__avatar-wrap">
+        <button type="button" class="hud-avatar" (click)="$event.stopPropagation()">
+          <img
+            class="hud-avatar__photo"
+            [src]="profileAvatarUrl"
+            [alt]="userDisplayName"
+            (error)="onProfileAvatarError()" />
+          <span class="hud-avatar__initial" *ngIf="profileAvatarHasError">{{ userInitial }}</span>
+          <img class="hud-avatar__frame" src="assets/Images/principal/Marco_Dorado2.png" alt="" aria-hidden="true" />
+        </button>
       </div>
     </header>
-
-    <section class="stats-grid" *ngIf="!isLoading && !errorMessage && activeQuestion">
-      <article class="stat-box stat-box--time">
-        <span class="stat-label">Tiempo</span>
-        <strong>{{ timeLeft }}s</strong>
-        <div class="stat-timer-track">
-          <span class="stat-timer-fill" [style.width.%]="getTimerProgress()"></span>
-        </div>
-      </article>
-
-      <article class="stat-box stat-box--points">
-        <span class="stat-label">Puntos</span>
-        <strong>{{ totalPoints }}</strong>
-      </article>
-
-      <article class="stat-box stat-box--streak">
-        <span class="stat-label">Racha</span>
-        <strong>{{ streak }}x</strong>
-      </article>
-    </section>
 
     <div *ngIf="isLoading" class="state-center">
       <ion-spinner name="crescent" color="light"></ion-spinner>
@@ -44,49 +30,214 @@
       <p>No hay preguntas disponibles para esta sesion.</p>
     </div>
 
-    <article class="question-card" *ngIf="!isLoading && !errorMessage && activeQuestion">
-      <div class="question-banner">
-        <span class="question-topic">{{ activeQuestion.explanation }}</span>
-        <span class="question-points">{{ activeQuestion.points }} pts</span>
+    <section class="pocket-layout" *ngIf="!isLoading && !errorMessage && activeQuestion">
+
+      <div class="screen-confetti" [class.screen-confetti--burst]="showHappyConfettiBurst" aria-hidden="true">
+        <span class="screen-confetti__piece screen-confetti__piece--one"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--two"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--three"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--four"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--five"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--six"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--seven"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--eight"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--nine"></span>
+        <span class="screen-confetti__piece screen-confetti__piece--ten"></span>
       </div>
 
-      <div class="question-card__top">
-        <span class="question-order">Pregunta {{ activeQuestion.questionOrder }} de {{ questions.length }}</span>
-        <div class="question-progress" aria-hidden="true">
-          <span *ngFor="let question of questions; let i = index" [class]="getProgressStepClass(i)"></span>
+      <div class="screen-wrong" [class.screen-wrong--burst]="showWrongAnswerBurst" aria-hidden="true">
+        <span class="screen-wrong__pulse"></span>
+        <span class="screen-wrong__cross">✕</span>
+      </div>
+
+      <!-- ── Question panel ─────────────────────────────── -->
+      <article class="q-panel" [class.q-panel--wrong-burst]="showWrongAnswerBurst">
+
+        <!-- Top bar: badge | progress dots | counter -->
+        <div class="q-topbar">
+          <span class="q-badge">SECRETO</span>
+          <div class="q-progress" aria-hidden="true">
+            <span *ngFor="let step of progressSteps; let i = index" [class]="getProgressStepClass(i)"></span>
+          </div>
+          <span class="q-counter">PREGUNTA {{ currentQuestionNumber }} / {{ cantidadTotalPreguntas }}</span>
         </div>
+
+        <!-- Question body -->
+        <div class="q-body">
+
+          <!-- Topic row + timer circle -->
+          <div class="q-header-row">
+            <div class="q-topic"></div>
+            <div class="q-timer" [class.q-timer--urgent]="isQuestionTimerEnabled && timeLeft <= 5">
+              <span class="q-timer__value">{{ isQuestionTimerEnabled ? timeLeft : '∞' }}</span>
+              <span class="q-timer__unit">SEG</span>
+            </div>
+          </div>
+
+          <!-- Question text -->
+          <h2 class="q-text">{{ activeQuestion.questionText }}</h2>
+
+          <!-- Loading options -->
+          <div *ngIf="isLoadingOptions" class="options-state">
+            <ion-spinner name="crescent" color="light"></ion-spinner>
+            <p>Cargando respuestas...</p>
+          </div>
+
+          <!-- Options list -->
+          <div class="options-list" *ngIf="!isLoadingOptions && options.length > 0">
+            <button
+              class="option-btn"
+              type="button"
+              *ngFor="let option of options; let i = index"
+              (click)="selectOption(option.id)"
+              [class.option-btn--selected]="isOptionSelected(option.id)"
+              [class.option-btn--correct]="answerFeedback?.isCorrect && isOptionSelected(option.id)"
+              [class.option-btn--wrong]="answerFeedback && !answerFeedback.isCorrect && isOptionSelected(option.id)"
+              [disabled]="isGameFinished || hasAnsweredCurrentQuestion() || showRankingModal">
+              <span class="option-letter"
+                [class.option-letter--correct]="answerFeedback?.isCorrect && isOptionSelected(option.id)"
+                [class.option-letter--wrong]="answerFeedback && !answerFeedback.isCorrect && isOptionSelected(option.id)">
+                {{ getOptionLetter(i) }}
+              </span>
+              <span class="option-text">{{ option.optionText }}</span>
+              <span class="option-star" *ngIf="answerFeedback?.isCorrect && isOptionSelected(option.id)" aria-hidden="true">★</span>
+            </button>
+          </div>
+
+          <div class="options-state" *ngIf="!isLoadingOptions && options.length === 0">
+            <p>No hay respuestas disponibles para esta pregunta.</p>
+          </div>
+
+        </div>
+
+        <!-- Footer bar: hint -->
+        <div class="q-footer">
+          <ng-container *ngIf="answerFeedback?.isCorrect; else hintBar">
+            <span class="hint-bar__icon" aria-hidden="true">✓</span>
+            <span class="hint-bar__text hint-bar__text--correct">{{ answerFeedback!.message }}</span>
+          </ng-container>
+          <ng-template #hintBar>
+            <span class="hint-bar__icon" aria-hidden="true">ℹ</span>
+            <span class="hint-bar__text">Selecciona una respuesta para avanzar a la siguiente pregunta</span>
+          </ng-template>
+        </div>
+
+      </article>
+
+      <div class="side-stack">
+
+        <!-- ── Media panel (top-right) ─────────────────── -->
+        <article class="media-panel">
+          <div class="q-media">
+            <div
+              class="arcade-stage"
+              [class.arcade-stage--happy]="answerFeedback?.isCorrect === true"
+              [class.arcade-stage--sad]="answerFeedback?.isCorrect === false"
+              aria-hidden="true">
+              <span class="arcade-stage__ring arcade-stage__ring--outer"></span>
+              <span class="arcade-stage__ring arcade-stage__ring--mid"></span>
+              <span class="arcade-stage__ring arcade-stage__ring--inner"></span>
+
+              <div class="arcade-stage__core">
+                <span class="arcade-stage__spark arcade-stage__spark--one"></span>
+                <span class="arcade-stage__spark arcade-stage__spark--two"></span>
+                <span class="arcade-stage__spark arcade-stage__spark--three"></span>
+                <span class="arcade-stage__spark arcade-stage__spark--four"></span>
+                <div class="arcade-stage__token">
+                  <div class="arcade-mascot" aria-hidden="true">
+                    <span class="arcade-mascot__cap"></span>
+                    <span class="arcade-mascot__face">
+                      <span class="arcade-mascot__eye arcade-mascot__eye--left"></span>
+                      <span class="arcade-mascot__eye arcade-mascot__eye--right"></span>
+                      <span class="arcade-mascot__smile"></span>
+                    </span>
+                    <span class="arcade-mascot__glove arcade-mascot__glove--left"></span>
+                    <span class="arcade-mascot__glove arcade-mascot__glove--right"></span>
+                    <span class="arcade-mascot__shoe arcade-mascot__shoe--left"></span>
+                    <span class="arcade-mascot__shoe arcade-mascot__shoe--right"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── Ranking sidebar (bottom-right) ───────────── -->
+        <aside class="ranking-sidebar" aria-live="polite" aria-label="Ranking en vivo">
+
+          <header class="rank-header">
+            <div class="rank-header__title">
+              <span class="rank-trophy" aria-hidden="true">🏆</span>
+              <h3>CLASIFICACIÓN</h3>
+            </div>
+            <div class="live-badge">
+              <span class="live-dot" aria-hidden="true"></span>
+              <span>EN VIVO</span>
+            </div>
+          </header>
+
+          <div class="rank-list" *ngIf="rankingPlayers.length > 0; else liveLoadingState">
+            <div class="rank-item"
+              *ngFor="let player of rankingPlayers"
+              [class.rank-item--leader]="player.position === 1"
+              [class.rank-item--me]="player.isCurrentUser">
+              <span class="rank-medal">{{ getMedalIcon(player.position) }}</span>
+              <span class="rank-avatar" [class.rank-avatar--gold]="player.position === 1">{{ player.avatar }}</span>
+              <span class="rank-name">{{ player.name }}</span>
+              <span class="rank-flames">{{ getStreakFlames(player.streak ?? 0) }}</span>
+              <span class="rank-points">{{ player.points }}</span>
+            </div>
+          </div>
+
+          <ng-template #liveLoadingState>
+            <div class="ranking-empty">Actualizando ranking...</div>
+          </ng-template>
+
+          <div class="speed-bonus">
+            <div class="speed-bonus__header">
+              <span aria-hidden="true">⚡</span>
+              <span class="speed-bonus__title">BONUS DE VELOCIDAD</span>
+            </div>
+            <p class="speed-bonus__text">
+              Responder en los primeros <strong>5 segundos</strong> otorga <strong>×2 puntos</strong>.
+            </p>
+          </div>
+
+        </aside>
+
       </div>
 
-      <h2>{{ activeQuestion.questionText }}</h2>
+    </section>
 
-      <div *ngIf="isLoadingOptions" class="options-state">
-        <ion-spinner name="crescent" color="light"></ion-spinner>
-        <p>Cargando respuestas...</p>
+  </section>
+
+  <!-- ── Explanation modal (wrong answer) ───────────────── -->
+  <div class="explanation-overlay" *ngIf="showExplanationModal" role="dialog" aria-modal="true" aria-label="Explicación">
+    <div class="explanation-card">
+
+      <div class="explanation-header">
+        <span class="explanation-icon" aria-hidden="true">✕</span>
+        <span class="explanation-title">Respuesta incorrecta</span>
       </div>
 
-      <div class="options-list" *ngIf="!isLoadingOptions && options.length > 0">
-        <button
-          class="option-item"
-          type="button"
-          *ngFor="let option of options"
-          (click)="selectOption(option.id)"
-          [class.option-item--selected]="isOptionSelected(option.id)"
-          [disabled]="isGameFinished || hasAnsweredCurrentQuestion()">
-          {{ option.optionText }}
+      <div class="explanation-body" *ngIf="explanationCorrectAnswers">
+        <span class="explanation-label">Respuesta correcta</span>
+        <p class="explanation-correct">{{ explanationCorrectAnswers }}</p>
+      </div>
+
+      <div class="explanation-body" *ngIf="explanationText">
+        <span class="explanation-label">Explicación</span>
+        <p class="explanation-text">{{ explanationText }}</p>
+      </div>
+
+      <div class="explanation-footer">
+        <span class="explanation-countdown">Siguiente en {{ explanationCountdown }}s…</span>
+        <button class="btn-skip" type="button" (click)="skipExplanationModal()">
+          Siguiente <span aria-hidden="true">›</span>
         </button>
       </div>
 
-      <div class="options-state" *ngIf="!isLoadingOptions && options.length === 0">
-        <p>No hay respuestas disponibles para esta pregunta.</p>
-      </div>
+    </div>
+  </div>
 
-      <p class="finish-message" *ngIf="isGameFinished">
-        Juego terminado. Puntaje final: {{ totalPoints }} pts. Regresando a la lista de juegos en {{ redirectSecondsLeft }}s.
-      </p>
-
-      <div class="question-meta">
-        <span>Selecciona tu respuesta antes de que se acabe el tiempo</span>
-      </div>
-    </article>
-  </section>
 </ion-content>
