@@ -2582,6 +2582,125 @@
   color: #fda4af;
 }
 
+/* ── Explanation modal ─────────────────────────────────── */
+.explanation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  animation: fade-in 0.25s ease;
+}
+
+.explanation-card {
+  background: linear-gradient(145deg, rgba(10, 15, 35, 0.98), rgba(35, 8, 55, 0.98));
+  border: 2px solid rgba(239, 68, 68, 0.75);
+  border-radius: 16px;
+  padding: 24px 28px;
+  max-width: 480px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 0 48px rgba(239, 68, 68, 0.25), 0 8px 32px rgba(0, 0, 0, 0.6);
+  animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.explanation-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.explanation-icon {
+  font-size: 1.5rem;
+  color: #f87171;
+  font-weight: 900;
+}
+
+.explanation-title {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: 0.06rem;
+}
+
+.explanation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explanation-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08rem;
+}
+
+.explanation-correct {
+  color: #4ade80;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.explanation-text {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.explanation-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.explanation-countdown {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.btn-skip {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 22px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.04rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.hint-bar__text--correct {
+  color: #4ade80;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .q-panel .options-list {
   position: relative;
   z-index: 1;

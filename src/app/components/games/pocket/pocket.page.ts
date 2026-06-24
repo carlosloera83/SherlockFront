@@ -35,8 +35,9 @@ export class PocketPage implements OnInit, OnDestroy {
   profileAvatarHasError = false;
   userDisplayName = 'Jugador';
   userInitial = 'J';
-  readonly isQuestionTimerEnabled = false;
-  readonly totalQuestionSeconds = 15;
+  isQuestionTimerEnabled = true;
+  readonly totalQuestionSeconds = 20;
+  questionTimerTotal = this.totalQuestionSeconds;
   readonly defaultQuestionPlatformUrl = 'assets/Images/BackGround_Create_user.png';
   readonly gemsPerPoint = 10;
   readonly confettiBurstDurationMs = 1200;
@@ -45,6 +46,9 @@ export class PocketPage implements OnInit, OnDestroy {
   options: PocketQuestionOption[] = [];
   activeQuestion: PocketQuestion | null = null;
   activeIndex = 0;
+  cantidadTotalPreguntas = 0;
+  preguntasFaltantes = 0;
+  numeroPreguntaActual = 0;
   timeLeft = this.totalQuestionSeconds;
   totalPoints = 0;
   streak = 0;
@@ -61,7 +65,10 @@ export class PocketPage implements OnInit, OnDestroy {
   showHappyConfettiBurst = false;
   showWrongAnswerBurst = false;
   answerFeedback: { isCorrect: boolean; message: string } | null = null;
-  pendingNextIndex = -1;
+  showExplanationModal = false;
+  explanationText: string | null = null;
+  explanationCorrectAnswers: string | null = null;
+  explanationCountdown = 3;
   sessionTitle = 'Modo Pocket';
   private gameSessionId = '';
   private userId = '';
@@ -75,8 +82,13 @@ export class PocketPage implements OnInit, OnDestroy {
   private answerSuccessSound: HTMLAudioElement | null = null;
   private answerErrorSound: HTMLAudioElement | null = null;
 
+  private pendingIsGameFinished = false;
+  private pendingFinalScore = 0;
+  private explanationHandle: ReturnType<typeof setTimeout> | null = null;
+  private explanationCountdownHandle: ReturnType<typeof setInterval> | null = null;
   private selectedOptionByQuestionId: Record<string, string | null> = {};
   private timerHandle: ReturnType<typeof setInterval> | null = null;
+  private localExpiresAt: number | null = null;
   private redirectHandle: ReturnType<typeof setTimeout> | null = null;
   private redirectCountdownHandle: ReturnType<typeof setInterval> | null = null;
   private intermissionHandle: ReturnType<typeof setTimeout> | null = null;
@@ -144,6 +156,7 @@ export class PocketPage implements OnInit, OnDestroy {
     this.clearIntermissionTimers();
     this.clearConfettiBurst();
     this.clearWrongAnswerBurst();
+    this.clearExplanationTimers();
   }
 
   async ionViewWillEnter(): Promise<void> {
@@ -241,9 +254,15 @@ export class PocketPage implements OnInit, OnDestroy {
     this.timeLeft = this.totalQuestionSeconds;
     this.selectedOptionByQuestionId = {};
     this.answerFeedback = null;
+    this.showExplanationModal = false;
+    this.explanationText = null;
+    this.explanationCorrectAnswers = null;
+    this.cantidadTotalPreguntas = 0;
+    this.preguntasFaltantes = 0;
+    this.numeroPreguntaActual = 0;
     this.clearConfettiBurst();
     this.clearWrongAnswerBurst();
-    this.pendingNextIndex = -1;
+    this.clearExplanationTimers();
     this.clearRedirectTimers();
     this.clearIntermissionTimers();
 
@@ -255,7 +274,11 @@ export class PocketPage implements OnInit, OnDestroy {
           return;
         }
 
-        this.questions = [...response.data].sort((a, b) => a.questionOrder - b.questionOrder);
+        const data = response.data;
+        this.cantidadTotalPreguntas = data.cantidadTotalPreguntas;
+        this.preguntasFaltantes = data.preguntasFaltantes;
+        this.numeroPreguntaActual = data.numeroPreguntaActual;
+        this.questions = [...data.questions].sort((a, b) => a.questionOrder - b.questionOrder);
 
         if (this.questions.length === 0) {
           this.activeQuestion = null;
@@ -298,6 +321,9 @@ export class PocketPage implements OnInit, OnDestroy {
         this.options = [...response.data].sort((a, b) => a.displayOrder - b.displayOrder);
         this.isLoadingOptions = false;
         this.isLoading = false;
+        if (this.activeQuestion) {
+          this.startQuestionTimer(this.activeQuestion);
+        }
       },
       error: () => {
         this.errorMessage = 'No fue posible cargar las respuestas de la pregunta.';
@@ -336,18 +362,17 @@ export class PocketPage implements OnInit, OnDestroy {
     );
   }
 
-  proceedToNextQuestion(): void {
-    const idx = this.pendingNextIndex;
-    this.answerFeedback = null;
-    this.pendingNextIndex = -1;
+  skipExplanationModal(): void {
+    this.clearExplanationTimers();
+    this.autoAdvanceAfterAnswer();
+  }
 
-    if (idx === -2) {
-      this.finishGame(this.totalPoints);
-      return;
-    }
-    if (idx >= 0) {
-      this.goToNextQuestion(idx);
-    }
+  get currentQuestionNumber(): number {
+    return this.numeroPreguntaActual > 0 ? this.numeroPreguntaActual : 1;
+  }
+
+  get progressSteps(): number[] {
+    return Array.from({ length: this.cantidadTotalPreguntas }, (_, i) => i);
   }
 
   getOptionLetter(index: number): string {
@@ -366,15 +391,18 @@ export class PocketPage implements OnInit, OnDestroy {
   }
 
   getTimerProgress(): number {
-    return (this.timeLeft / this.totalQuestionSeconds) * 100;
+    if (this.questionTimerTotal <= 0) return 0;
+    return (this.timeLeft / this.questionTimerTotal) * 100;
   }
 
   getProgressStepClass(index: number): string {
-    if (index < this.activeIndex) {
+    const currentIdx = this.currentQuestionNumber - 1;
+
+    if (index < currentIdx) {
       return 'progress-step progress-step--done';
     }
 
-    if (index === this.activeIndex) {
+    if (index === currentIdx) {
       return 'progress-step progress-step--active';
     }
 
@@ -411,25 +439,44 @@ export class PocketPage implements OnInit, OnDestroy {
     return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
   }
 
-  private startTimer(): void {
+  private startQuestionTimer(question: PocketQuestion): void {
     this.clearTimer();
+
+    if (question.expiresAt && question.serverNow) {
+      const msRemaining = new Date(question.expiresAt).getTime() - new Date(question.serverNow).getTime();
+      this.timeLeft = Math.max(0, Math.ceil(msRemaining / 1000));
+      this.questionTimerTotal = question.timeLimitSeconds ?? this.totalQuestionSeconds;
+      // Anchor to local clock to avoid drift on each tick
+      this.localExpiresAt = Date.now() + msRemaining;
+    } else {
+      this.timeLeft = question.timeLimitSeconds ?? this.totalQuestionSeconds;
+      this.questionTimerTotal = this.timeLeft;
+      this.localExpiresAt = Date.now() + this.timeLeft * 1000;
+    }
+
+    if (this.timeLeft <= 0) {
+      this.handleQuestionTimeout();
+      return;
+    }
 
     this.timerHandle = setInterval(() => {
       if (this.isGameFinished || this.isLoading || this.showRankingModal) {
         return;
       }
 
-      if (this.timeLeft > 0) {
-        this.timeLeft -= 1;
-        return;
-      }
+      this.timeLeft = Math.max(0, Math.ceil((this.localExpiresAt! - Date.now()) / 1000));
 
-      this.handleQuestionTimeout();
+      if (this.timeLeft <= 0) {
+        this.clearTimer();
+        this.handleQuestionTimeout();
+      }
     }, 1000);
   }
 
   private handleQuestionTimeout(): void {
-    if (!this.activeQuestion || this.isLoadingOptions || this.isGameFinished || !this.gameSessionId || !this.userId) {
+    this.clearTimer();
+
+    if (!this.activeQuestion || this.isGameFinished) {
       return;
     }
 
@@ -438,7 +485,15 @@ export class PocketPage implements OnInit, OnDestroy {
       return;
     }
 
-    this.submitCurrentAnswer(null);
+    // Mark the question as timed-out without a selection
+    this.selectedOptionByQuestionId[questionId] = null;
+    this.playAnswerFeedbackSound(false);
+    this.triggerWrongAnswerBurst(false);
+
+    // Auto-advance after the error animation completes
+    setTimeout(() => {
+      this.loadNextQuestion();
+    }, this.wrongAnswerBurstDurationMs + 100);
   }
 
   private submitCurrentAnswer(optionId: string | null): void {
@@ -451,6 +506,7 @@ export class PocketPage implements OnInit, OnDestroy {
       return;
     }
 
+    this.clearTimer();
     this.selectedOptionByQuestionId[questionId] = optionId;
     this.isLoadingOptions = true;
 
@@ -477,32 +533,21 @@ export class PocketPage implements OnInit, OnDestroy {
         this.triggerWrongAnswerBurst(response.data.isCorrect);
         this.answerFeedback = {
           isCorrect: response.data.isCorrect,
-          message: (response.data as any).mensaje || (response.data.isCorrect ? '¡Respuesta correcta!' : 'Respuesta incorrecta.'),
+          message: response.data.mensaje || (response.data.isCorrect ? '¡Respuesta correcta!' : 'Respuesta incorrecta.'),
         };
 
-        if (response.data.isGameFinished) {
-          this.pendingNextIndex = -2;
-          return;
-        }
-
-        const nextQuestionId = response.data.nextQuestionId;
-        let nextIndex = -1;
-
-        if (nextQuestionId) {
-          nextIndex = this.questions.findIndex((item) => item.gameQuestionId === nextQuestionId);
-        }
-
-        if (nextIndex === -1 && this.activeIndex < this.questions.length - 1) {
-          nextIndex = this.activeIndex + 1;
-        }
-
-        if (nextIndex === -1) {
-          this.pendingNextIndex = -2;
-          return;
-        }
-
-        this.pendingNextIndex = nextIndex;
+        this.pendingIsGameFinished = response.data.isGameFinished;
+        this.pendingFinalScore = response.data.totalScore;
         this.loadRanking('intermission', response.data.totalScore);
+
+        if (response.data.isCorrect) {
+          setTimeout(() => this.autoAdvanceAfterAnswer(), this.confettiBurstDurationMs + 300);
+        } else {
+          this.explanationText = response.data.explanation ?? null;
+          this.explanationCorrectAnswers = response.data.correctAnswers ?? null;
+          this.showExplanationModal = true;
+          this.startExplanationCountdown();
+        }
       },
       error: () => {
         this.isLoadingOptions = false;
@@ -664,12 +709,96 @@ export class PocketPage implements OnInit, OnDestroy {
     this.router.navigate(['/games']);
   }
 
-  private goToNextQuestion(nextIndex: number): void {
-    this.activeIndex = nextIndex;
-    this.activeQuestion = this.questions[this.activeIndex];
-    this.timeLeft = this.totalQuestionSeconds;
+  private autoAdvanceAfterAnswer(): void {
+    this.showExplanationModal = false;
+    this.explanationText = null;
+    this.explanationCorrectAnswers = null;
+    this.answerFeedback = null;
+
+    if (this.pendingIsGameFinished) {
+      this.finishGame(this.pendingFinalScore);
+      return;
+    }
+
+    this.loadNextQuestion();
+  }
+
+  private startExplanationCountdown(): void {
+    this.clearExplanationTimers();
+    this.explanationCountdown = 10;
+
+    this.explanationCountdownHandle = setInterval(() => {
+      if (this.explanationCountdown > 0) {
+        this.explanationCountdown -= 1;
+      }
+    }, 1000);
+
+    this.explanationHandle = setTimeout(() => {
+      this.clearExplanationTimers();
+      this.autoAdvanceAfterAnswer();
+    }, 10000);
+  }
+
+  private clearExplanationTimers(): void {
+    if (this.explanationHandle) {
+      clearTimeout(this.explanationHandle);
+      this.explanationHandle = null;
+    }
+
+    if (this.explanationCountdownHandle) {
+      clearInterval(this.explanationCountdownHandle);
+      this.explanationCountdownHandle = null;
+    }
+  }
+
+  private loadNextQuestion(): void {
+    this.clearTimer();
     this.options = [];
-    this.loadOptionsForActiveQuestion();
+    this.activeQuestion = null;
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    this.pocketService.getQuestions(this.gameSessionId, this.userId).subscribe({
+      next: (response) => {
+        if (!response.success) {
+          if (response.message === 'USER_ALREADY_ANSWERED_ALL_QUESTIONS') {
+            this.isLoading = false;
+            this.finishGame(this.totalPoints);
+            return;
+          }
+          this.errorMessage = response.message;
+          this.isLoading = false;
+          return;
+        }
+
+        const data = response.data;
+        this.cantidadTotalPreguntas = data.cantidadTotalPreguntas;
+        this.preguntasFaltantes = data.preguntasFaltantes;
+        this.numeroPreguntaActual = data.numeroPreguntaActual;
+
+        if (data.questions.length === 0) {
+          this.isLoading = false;
+          this.finishGame(this.totalPoints);
+          return;
+        }
+
+        this.questions = [...data.questions].sort((a, b) => a.questionOrder - b.questionOrder);
+        this.activeIndex = 0;
+        this.activeQuestion = this.questions[0];
+        this.selectedOptionByQuestionId = {};
+        this.loadOptionsForActiveQuestion();
+      },
+      error: (err) => {
+        const serverMessage = err?.error?.message as string | undefined;
+        if (serverMessage === 'USER_ALREADY_ANSWERED_ALL_QUESTIONS') {
+          this.isLoading = false;
+          this.finishGame(this.totalPoints);
+          return;
+        }
+        this.errorMessage = 'No fue posible cargar la siguiente pregunta.';
+        this.isLoading = false;
+      },
+    });
   }
 
   private loadRanking(target: 'intermission', fallbackScore: number): void {

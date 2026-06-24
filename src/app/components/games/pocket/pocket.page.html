@@ -57,9 +57,9 @@
         <div class="q-topbar">
           <span class="q-badge">SECRETO</span>
           <div class="q-progress" aria-hidden="true">
-            <span *ngFor="let q of questions; let i = index" [class]="getProgressStepClass(i)"></span>
+            <span *ngFor="let step of progressSteps; let i = index" [class]="getProgressStepClass(i)"></span>
           </div>
-          <span class="q-counter">PREGUNTA {{ activeIndex + 1 }} / {{ questions.length }}</span>
+          <span class="q-counter">PREGUNTA {{ currentQuestionNumber }} / {{ cantidadTotalPreguntas }}</span>
         </div>
 
         <!-- Question body -->
@@ -110,16 +110,11 @@
 
         </div>
 
-        <!-- Footer bar: hint or answer feedback + next button -->
+        <!-- Footer bar: hint -->
         <div class="q-footer">
-          <ng-container *ngIf="answerFeedback; else hintBar">
-            <div class="answer-info">
-              <span class="answer-info__icon" aria-hidden="true">ℹ</span>
-              <span class="answer-info__text">{{ answerFeedback.message }}</span>
-            </div>
-            <button class="btn-siguiente" type="button" (click)="proceedToNextQuestion()">
-              Siguiente <span aria-hidden="true">›</span>
-            </button>
+          <ng-container *ngIf="answerFeedback?.isCorrect; else hintBar">
+            <span class="hint-bar__icon" aria-hidden="true">✓</span>
+            <span class="hint-bar__text hint-bar__text--correct">{{ answerFeedback!.message }}</span>
           </ng-container>
           <ng-template #hintBar>
             <span class="hint-bar__icon" aria-hidden="true">ℹ</span>
@@ -215,4 +210,34 @@
     </section>
 
   </section>
+
+  <!-- ── Explanation modal (wrong answer) ───────────────── -->
+  <div class="explanation-overlay" *ngIf="showExplanationModal" role="dialog" aria-modal="true" aria-label="Explicación">
+    <div class="explanation-card">
+
+      <div class="explanation-header">
+        <span class="explanation-icon" aria-hidden="true">✕</span>
+        <span class="explanation-title">Respuesta incorrecta</span>
+      </div>
+
+      <div class="explanation-body" *ngIf="explanationCorrectAnswers">
+        <span class="explanation-label">Respuesta correcta</span>
+        <p class="explanation-correct">{{ explanationCorrectAnswers }}</p>
+      </div>
+
+      <div class="explanation-body" *ngIf="explanationText">
+        <span class="explanation-label">Explicación</span>
+        <p class="explanation-text">{{ explanationText }}</p>
+      </div>
+
+      <div class="explanation-footer">
+        <span class="explanation-countdown">Siguiente en {{ explanationCountdown }}s…</span>
+        <button class="btn-skip" type="button" (click)="skipExplanationModal()">
+          Siguiente <span aria-hidden="true">›</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
 </ion-content>

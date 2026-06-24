@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import {
   ApiResponsePocket,
-  PocketQuestion,
+  PocketQuestionsData,
   PocketQuestionOption,
   RankingEntry,
   SubmitAnswerData,
@@ -20,8 +20,8 @@ export class PocketService {
 
   constructor(private http: HttpClient) {}
 
-  getQuestions(gameSessionId: string, userId: string): Observable<ApiResponsePocket<PocketQuestion[]>> {
-    return this.http.get<ApiResponsePocket<PocketQuestion[]>>(
+  getQuestions(gameSessionId: string, userId: string): Observable<ApiResponsePocket<PocketQuestionsData>> {
+    return this.http.get<ApiResponsePocket<PocketQuestionsData>>(
       `${this.questionBaseUrl}/QuestionsBySession?gameSessionId=${gameSessionId}&userId=${userId}`
     );
   }

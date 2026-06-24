@@ -608,6 +608,7 @@ export class GameAddSessionPage implements OnInit {
         questionOrder: number;
         points: number;
         isRequired: boolean;
+        timeLimitSeconds: number;
       }) => ({
         tempQuestionId: Number(question.tempQuestionId),
         questionText: question.questionText,
@@ -617,6 +618,7 @@ export class GameAddSessionPage implements OnInit {
         questionOrder: Number(question.questionOrder),
         points: Number(question.points),
         isRequired: Boolean(question.isRequired),
+        timeLimitSeconds: Number(question.timeLimitSeconds),
       })
     );
 
@@ -641,7 +643,6 @@ export class GameAddSessionPage implements OnInit {
       costGems: Number(raw.costGems),
       totalGems: Number(raw.totalGems),
       categoryId: raw.categoryId,
-      secondsPerQuestion: Number(raw.secondsPerQuestion),
       questions,
       options,
     };
@@ -684,6 +685,7 @@ export class GameAddSessionPage implements OnInit {
 
   private replaceQuestionsFromPreview(questions: AiSessionPreviewQuestion[]): void {
     this.questionsFormArray.clear();
+    const defaultSeconds = Number(this.sessionForm.get('secondsPerQuestion')?.value || 30);
 
     questions.forEach((question, questionIndex) => {
       const options = question.options.map((option, optionIndex) =>
@@ -700,6 +702,7 @@ export class GameAddSessionPage implements OnInit {
           questionOrder: [questionIndex + 1, [Validators.required, Validators.min(1)]],
           points: [question.points, [Validators.required, Validators.min(1)]],
           isRequired: [true, Validators.required],
+          timeLimitSeconds: [defaultSeconds, [Validators.required, Validators.min(5), Validators.max(300)]],
           options: this.formBuilder.array(options),
         })
       );

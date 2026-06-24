@@ -9,7 +9,6 @@ export interface CreateGameSessionFullRequest {
   costGems: number;
   totalGems: number;
   categoryId: string;
-  secondsPerQuestion: number;
   questions: CreateGameSessionFullQuestionRequest[];
   options: CreateGameSessionFullOptionRequest[];
 }
@@ -69,6 +68,7 @@ export interface CreateGameSessionFullQuestionRequest {
   questionOrder: number;
   points: number;
   isRequired: boolean;
+  timeLimitSeconds: number;
 }
 
 export interface CreateGameSessionFullOptionRequest {
