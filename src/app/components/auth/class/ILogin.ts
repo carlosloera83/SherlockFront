@@ -10,6 +10,7 @@ export interface LoginResponseData {
   firstName: string;
   lastName: string;
   nickName: string;
+  token: string;
 }
 
 export interface ApiResponse<T> {

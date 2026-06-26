@@ -38,6 +38,15 @@
 
           <!-- <button type="button" class="combat-sidebar__cta">Juega y Gana</button> -->
 
+          <div class="presence-chip" aria-label="Jugadores conectados ahora">
+            <span class="presence-chip__dot-wrap">
+              <span class="presence-chip__dot"></span>
+              <span class="presence-chip__ping"></span>
+            </span>
+            <span class="presence-chip__count">{{ onlinePlayersCount() }}</span>
+            <span class="presence-chip__label">jugadores online</span>
+          </div>
+
           <div class="sidebar-stat-pills" aria-label="Estadísticas del jugador">
             <div class="sidebar-stat-pill sidebar-stat-pill--wins">
               <strong>{{ gamesWon | number }}</strong>

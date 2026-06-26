@@ -90,9 +90,6 @@ export class LoginPage implements OnInit {
 
         if (response.success && response.data) {
           await this.authService.saveSession(response.data);
-
-          const session = await this.authService.getSession();
-          console.log('SESSION GUARDADA:', session);
           this.router.navigateByUrl('/games', { replaceUrl: true });
           return;
         }

@@ -32,6 +32,7 @@ import { RewardsService } from '../services/rewards.service';
 import { ClaimPendingRewardRequest, PendingRewardDto } from '../class/IRewards';
 import { STORAGE_KEYS } from 'src/app/core/constants/storage.keys';
 import { ProfileService } from '../../features/profile/services/profile.service';
+import { PresenceService } from '../services/presence.service';
 
 interface GameCard {
   status: string;
@@ -257,6 +258,7 @@ export class GamesPage implements OnInit, OnDestroy {
     private pocketService: PocketService,
     private rewardsService: RewardsService,
     private profileService: ProfileService,
+    private presenceService: PresenceService,
   ) {
     addIcons({
       'checkmark-circle-outline': checkmarkCircleOutline,
@@ -272,6 +274,7 @@ export class GamesPage implements OnInit, OnDestroy {
   }
 
   readonly appVersion = environment.version;
+  readonly onlinePlayersCount = this.presenceService.onlineCount;
 
   async ngOnInit(): Promise<void> {
     await this.forcePortraitOrientation();
@@ -302,6 +305,8 @@ export class GamesPage implements OnInit, OnDestroy {
     } catch {
       this.errorMessage = 'No fue posible iniciar actualizaciones en vivo.';
     }
+
+    void this.presenceService.connect();
   }
 
   async ngOnDestroy(): Promise<void> {
@@ -310,6 +315,7 @@ export class GamesPage implements OnInit, OnDestroy {
     this.stopBackgroundMusic();
     await this.releaseOrientationLock();
     await this.gameSessionsLiveService.stopConnection();
+    await this.presenceService.disconnect();
     if (Capacitor.isNativePlatform()) {
       await StatusBar.show().catch(() => {});
     }
@@ -373,6 +379,7 @@ export class GamesPage implements OnInit, OnDestroy {
     event.stopPropagation();
     this.isUserMenuOpen = false;
     this.stopBackgroundMusic();
+    await this.presenceService.disconnect();
     await this.authService.clearSession();
     await this.router.navigateByUrl('/login', { replaceUrl: true });
   }

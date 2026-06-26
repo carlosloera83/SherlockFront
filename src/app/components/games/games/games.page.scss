@@ -2445,6 +2445,64 @@
   text-shadow: 0 0 10px rgba(217, 172, 47, 0.4);
 }
 
+/* ── Presence chip ── */
+.presence-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  background: rgba(6, 22, 10, 0.85);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  white-space: nowrap;
+  align-self: center;
+}
+
+.presence-chip__dot-wrap {
+  position: relative;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex-shrink: 0;
+}
+
+.presence-chip__dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.presence-chip__ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: presence-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes presence-ping {
+  0%   { transform: scale(1); opacity: 0.75; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.presence-chip__count {
+  color: #22c55e;
+  font-weight: 900;
+  font-size: 0.8rem;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.presence-chip__label {
+  color: var(--combat-muted);
+  font-weight: 700;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* ── Mode buttons: icon + body + badge layout ── */
 .combat-mode-btn__icon {
   flex-shrink: 0;
