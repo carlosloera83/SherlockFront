@@ -41,7 +41,7 @@ export class SidebarMenuComponent implements OnInit {
       children: [
         {
           title: 'Games',
-          route: '/games',
+          route: '/Tipos de Juegos',
           icon: 'game-controller-outline',
         },
         {

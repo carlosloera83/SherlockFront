@@ -22,6 +22,29 @@
   overflow: hidden;
 }
 
+.admin-mode {
+  background: #f0f4fb;
+
+  .layout-body {
+    overflow-y: auto;
+  }
+}
+
+.admin-layout {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  overflow: hidden;
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #f0f4fb;
+}
+
 .layout-body > router-outlet {
   display: contents;
 }

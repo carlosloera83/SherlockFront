@@ -206,6 +206,11 @@
                       </ion-item>
                     }
                   </div>
+
+                  <ion-item class="form-item compact-item">
+                    <ion-label position="stacked">Numero de preguntas a generar *</ion-label>
+                    <ion-input type="number" formControlName="numberOfQuestions"></ion-input>
+                  </ion-item>
                 </div>
 
               </div>
@@ -220,8 +225,8 @@
                   </div>
                   <div class="form-grid-3">
                     <ion-item class="form-item compact-item">
-                      <ion-label position="stacked">Numero de preguntas *</ion-label>
-                      <ion-input type="number" formControlName="numberOfQuestions"></ion-input>
+                      <ion-label position="stacked">Preguntas por participante *</ion-label>
+                      <ion-input type="number" formControlName="questionsPerPlayer"></ion-input>
                     </ion-item>
                     <ion-item class="form-item compact-item">
                       <ion-label position="stacked">Segundos  *</ion-label>
@@ -471,6 +476,33 @@
     </div>
   </section>
 </ion-content>
+
+<ion-modal
+  [isOpen]="showSuccessModal"
+  [backdropDismiss]="false"
+  cssClass="session-success-modal"
+  (didDismiss)="closeSuccessModal()">
+  <ng-template>
+    <div class="success-modal-wrap">
+      <div class="success-modal-icon">
+        <ion-icon name="checkmark-circle"></ion-icon>
+      </div>
+      <h2 class="success-modal-title">¡Sesión creada!</h2>
+      <p class="success-modal-subtitle">La sesión fue creada correctamente.</p>
+      <div class="success-modal-code-box">
+        <span class="success-modal-code-label">Código para jugar:</span>
+        <span class="success-modal-code-value">{{ createdSessionId }}</span>
+        <button type="button" class="copy-btn" [class.copied]="codeCopied" (click)="copyCode()">
+          <ion-icon [name]="codeCopied ? 'checkmark-outline' : 'copy-outline'"></ion-icon>
+          {{ codeCopied ? '¡Copiado!' : 'Copiar código' }}
+        </button>
+      </div>
+      <ion-button expand="block" color="success" class="success-modal-btn" (click)="closeSuccessModal()">
+        Aceptar
+      </ion-button>
+    </div>
+  </ng-template>
+</ion-modal>
 
 <ion-loading [isOpen]="isLoading" message="Creando sesión completa..."></ion-loading>
 <ion-loading

@@ -12,6 +12,7 @@ import {
   podiumOutline,
   pulseOutline,
   ribbonOutline,
+  searchOutline,
   statsChartOutline,
   trophyOutline,
 } from 'ionicons/icons';
@@ -193,6 +194,7 @@ export class GamesPage implements OnInit, OnDestroy {
   trophyScore = 0;
   isMusicEnabled = false;
   isUserMenuOpen = false;
+  sessionCodeInput = '';
 
   joiningGameSessionId: string | null = null;
   showRankingModal = false;
@@ -268,6 +270,7 @@ export class GamesPage implements OnInit, OnDestroy {
       'podium-outline': podiumOutline,
       'pulse-outline': pulseOutline,
       'ribbon-outline': ribbonOutline,
+      'search-outline': searchOutline,
       'stats-chart-outline': statsChartOutline,
       'trophy-outline': trophyOutline,
     });
@@ -361,6 +364,75 @@ export class GamesPage implements OnInit, OnDestroy {
     if (this.backButtonListener) {
       await this.backButtonListener.remove().catch(() => {});
       this.backButtonListener = null;
+    }
+  }
+
+  onCodeInput(event: Event): void {
+    this.sessionCodeInput = (event.target as HTMLInputElement).value;
+  }
+
+  async goToSessionByCode(): Promise<void> {
+    const code = this.sessionCodeInput.trim();
+    if (!code) return;
+
+    // Si el juego ya está cargado en la lista, usa el flujo normal completo
+    const existingGame = this.games.find((g) => g.session.gameSessionId === code);
+    if (existingGame) {
+      await this.handleBoardAction(existingGame);
+      return;
+    }
+
+    // Juego no está en lista: flujo de join directo con el código
+    if (!this.currentUserId) {
+      this.errorMessage = 'No se encontró sesión de usuario.';
+      return;
+    }
+
+    this.playEnterSound();
+
+    this.joiningGameSessionId = code;
+    try {
+      const response = await firstValueFrom(
+        this.gamesService.joinGameSession(code, this.currentUserId)
+      );
+
+      const joinMessage = (response.data?.mensaje || response.message || '') as JoinGameSessionMessage;
+
+      if (!response.success) {
+        if (this.isInsufficientGemsMessage(response.message)) {
+          await this.showInsufficientGemsModal(response.message || 'INSUFFICIENT_GEMS');
+          return;
+        }
+        this.errorMessage = response.message || 'No fue posible procesar la partida.';
+        return;
+      }
+
+      if (joinMessage === 'GAME_SESSION_FULL') {
+        await this.showInfoMessage('Cupo lleno para esta partida.');
+        return;
+      }
+
+      if (joinMessage === 'GAME_SESSION_FINISHED_OR_CANCELLED') {
+        await this.showInfoMessage('La partida ya finalizó o fue cancelada.');
+        return;
+      }
+
+      if (joinMessage === 'USER_ALREADY_FINISHED_GAME') {
+        await this.showInfoMessage('Ya terminaste esta partida. Se mostrará el resultado.');
+        this.navigateToGame(code, '/games/pocket');
+        return;
+      }
+
+      this.navigateToLobby(code, '/games/pocket');
+    } catch (error: any) {
+      const apiMessage = error?.error?.message || error?.message || '';
+      if (this.isInsufficientGemsMessage(apiMessage)) {
+        await this.showInsufficientGemsModal(apiMessage || 'INSUFFICIENT_GEMS');
+        return;
+      }
+      this.errorMessage = 'No fue posible unirte al juego. Intenta de nuevo.';
+    } finally {
+      this.joiningGameSessionId = null;
     }
   }
 
@@ -1017,12 +1089,12 @@ export class GamesPage implements OnInit, OnDestroy {
     }
 
     if (actionLabel === 'Lobby') {
-      this.navigateToLobby(session.gameSessionId, gameRoute);
+      this.navigateToLobby(session.gameSessionId, gameRoute, game);
       return;
     }
 
     if (actionLabel === 'Continuar') {
-      this.navigateToLobby(session.gameSessionId, gameRoute);
+      this.navigateToLobby(session.gameSessionId, gameRoute, game);
       return;
     }
 
@@ -1111,7 +1183,7 @@ export class GamesPage implements OnInit, OnDestroy {
         }
 
         await this.loadGames(false);
-        this.navigateToLobby(session.gameSessionId, gameRoute);
+        this.navigateToLobby(session.gameSessionId, gameRoute, game);
       } catch (error: any) {
         const apiMessage = error?.error?.message || error?.message || '';
         if (this.isInsufficientGemsMessage(apiMessage)) {
@@ -1257,11 +1329,14 @@ export class GamesPage implements OnInit, OnDestroy {
     return 1;
   }
 
-  private navigateToLobby(gameSessionId: string, gameRoute: string): void {
+  private navigateToLobby(gameSessionId: string, gameRoute: string, game?: GameCard): void {
     this.router.navigate(['/games/pocket/ranking'], {
       queryParams: {
         gameSessionId,
         gameRoute,
+        gameName: game?.title ?? '',
+        gameDesc: game?.session?.description ?? '',
+        gameCategory: game?.session?.category ?? '',
       },
     });
   }

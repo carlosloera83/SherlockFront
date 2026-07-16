@@ -1,0 +1,49 @@
+<header class="admin-header">
+  <div class="admin-header__inner">
+
+    <div class="admin-header__brand">
+      <img src="assets/icon/favicon.png" alt="Sherlock" class="brand-logo" />
+      <div class="brand-text">
+        <span class="brand-name">SHERLOCK</span>
+        <span class="brand-badge">ADMIN</span>
+      </div>
+    </div>
+
+    <nav class="admin-nav">
+      @for (item of menuItems; track item.label) {
+        <div class="nav-item">
+          <button
+            class="nav-trigger"
+            type="button"
+            [class.open]="item.open"
+            (click)="toggleMenu(item)">
+            <span>{{ item.label }}</span>
+            <ion-icon name="chevron-down-outline" [class.rotated]="item.open"></ion-icon>
+          </button>
+
+          @if (item.open) {
+            <div class="dropdown">
+              @for (child of item.children; track child.route) {
+                <a
+                  [routerLink]="child.route"
+                  class="dropdown-item"
+                  (click)="closeAll()">
+                  {{ child.label }}
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="admin-header__user">
+      <div class="user-avatar">{{ userInitials }}</div>
+      <span class="username">{{ userName }}</span>
+      <button class="logout-btn" type="button" title="Cerrar sesión" (click)="logout()">
+        <ion-icon name="log-out-outline"></ion-icon>
+      </button>
+    </div>
+
+  </div>
+</header>

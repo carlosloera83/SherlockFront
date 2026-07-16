@@ -4,18 +4,30 @@
   </ion-content>
 </ion-menu>
 
-<div id="main-content" class="main-content">
-  <app-header
-    *ngIf="!shouldHideLayoutChrome()"
-    title="SHERLOCK"
-    [userName]="userName"
-    profileImage="https://i.pravatar.cc/150?img=12"
-    (menuClick)="toggleMenu()">
-  </app-header>
+<div id="main-content" class="main-content" [class.admin-mode]="shouldUseLightTheme()">
 
-  <div class="layout-body">
-    <router-outlet></router-outlet>
-  </div>
+  @if (shouldShowAdminHeader()) {
+    <div class="admin-layout">
+      <app-admin-sidebar [userName]="userName"></app-admin-sidebar>
+      <div class="admin-content">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  } @else {
+    @if (!shouldHideLayoutChrome()) {
+      <app-header
+        title="SHERLOCK"
+        [userName]="userName"
+        profileImage="https://i.pravatar.cc/150?img=12"
+        (menuClick)="toggleMenu()">
+      </app-header>
+    }
+    <div class="layout-body">
+      <router-outlet></router-outlet>
+    </div>
+    @if (!shouldHideLayoutChrome()) {
+      <app-footer></app-footer>
+    }
+  }
 
-  <app-footer *ngIf="!shouldHideLayoutChrome()"></app-footer>
 </div>

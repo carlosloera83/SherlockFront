@@ -15,6 +15,7 @@ import {
   IonItem,
   IonLabel,
   IonLoading,
+  IonModal,
   IonSelect,
   IonSelectOption,
   IonSpinner,
@@ -29,6 +30,7 @@ import {
   chevronForwardOutline,
   closeOutline,
   cloudUploadOutline,
+  copyOutline,
   createOutline,
   documentTextOutline,
   helpCircleOutline,
@@ -83,6 +85,7 @@ interface GenerationModeOption {
     IonCardTitle,
     IonCardContent,
     IonLoading,
+    IonModal,
     IonIcon,
     IonSpinner,
     IonInput,
@@ -99,6 +102,7 @@ export class GameAddSessionPage implements OnInit {
   isLoadingStatuses = false;
   isLoadingCategories = false;
   showNotice = false;
+  showSuccessModal = false;
   alertMessage = '';
   alertTitle = '';
   isSuccess = false;
@@ -160,6 +164,7 @@ export class GameAddSessionPage implements OnInit {
       'chevron-forward-outline': chevronForwardOutline,
       'close-outline': closeOutline,
       'cloud-upload-outline': cloudUploadOutline,
+      'copy-outline': copyOutline,
       'create-outline': createOutline,
       'document-text-outline': documentTextOutline,
       'help-circle-outline': helpCircleOutline,
@@ -198,8 +203,9 @@ export class GameAddSessionPage implements OnInit {
       gameName: ['', [Validators.required, Validators.minLength(3)]],
       prompt: [''],
       sourceUrl: [''],
-      numberOfQuestions: [10, [Validators.required, Validators.min(1), Validators.max(500)]],
-      secondsPerQuestion: [30, [Validators.required, Validators.min(5), Validators.max(300)]],
+      numberOfQuestions: [30, [Validators.required, Validators.min(1), Validators.max(500)]],
+      questionsPerPlayer: [10, [Validators.required, Validators.min(1), Validators.max(500)]],
+      secondsPerQuestion: [5, [Validators.required, Validators.min(5), Validators.max(300)]],
       pointsPerQuestion: [10, [Validators.required, Validators.min(1), Validators.max(100)]],
       costGems: [0, [Validators.required, Validators.min(0)]],
       totalGems: [0, [Validators.required, Validators.min(0)]],
@@ -207,6 +213,16 @@ export class GameAddSessionPage implements OnInit {
       startTime: [startTime, Validators.required],
       endTime: [endTime, Validators.required],
       questions: this.formBuilder.array([]),
+    });
+
+    this.sessionForm.get('numberOfQuestions')?.valueChanges.subscribe((value) => {
+      const max = Number(value) || 1;
+      const perPlayerControl = this.sessionForm.get('questionsPerPlayer');
+      perPlayerControl?.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
+      if (Number(perPlayerControl?.value) > max) {
+        perPlayerControl?.setValue(max, { emitEvent: false });
+      }
+      perPlayerControl?.updateValueAndValidity({ emitEvent: false });
     });
   }
 
@@ -217,6 +233,7 @@ export class GameAddSessionPage implements OnInit {
       'categoryId',
       'gameName',
       'numberOfQuestions',
+      'questionsPerPlayer',
       'secondsPerQuestion',
       'pointsPerQuestion',
       'costGems',
@@ -242,7 +259,7 @@ export class GameAddSessionPage implements OnInit {
   }
 
   get totalPossiblePoints(): number {
-    const questionCount = Number(this.sessionForm.get('numberOfQuestions')?.value || 0);
+    const questionCount = Number(this.sessionForm.get('questionsPerPlayer')?.value || 0);
     const points = Number(this.sessionForm.get('pointsPerQuestion')?.value || 0);
     return questionCount * points;
   }
@@ -643,6 +660,7 @@ export class GameAddSessionPage implements OnInit {
       costGems: Number(raw.costGems),
       totalGems: Number(raw.totalGems),
       categoryId: raw.categoryId,
+      questionsPerPlayer: Number(raw.questionsPerPlayer),
       questions,
       options,
     };
@@ -652,10 +670,7 @@ export class GameAddSessionPage implements OnInit {
         this.isLoading = false;
         if (response.success) {
           this.createdSessionId = response.data;
-          this.showSuccessAlert(
-            'Sesión creada',
-            `La sesión completa fue creada correctamente. ID: ${response.data}`
-          );
+          this.showSuccessModal = true;
           this.resetAfterSuccess(raw.sessionDate, raw.startTime, raw.endTime);
         } else {
           this.showErrorAlert('Error', response.message || 'No se pudo crear la sesión.');
@@ -772,8 +787,9 @@ export class GameAddSessionPage implements OnInit {
       gameName: '',
       prompt: '',
       sourceUrl: '',
-      numberOfQuestions: 10,
-      secondsPerQuestion: 30,
+      numberOfQuestions: 45,
+      questionsPerPlayer: 10,
+      secondsPerQuestion: 5,
       pointsPerQuestion: 10,
       costGems: 0,
       totalGems: 0,
@@ -789,5 +805,19 @@ export class GameAddSessionPage implements OnInit {
 
   closeAlert(): void {
     this.showNotice = false;
+  }
+
+  closeSuccessModal(): void {
+    this.showSuccessModal = false;
+    this.codeCopied = false;
+  }
+
+  codeCopied = false;
+
+  copyCode(): void {
+    navigator.clipboard.writeText(this.createdSessionId).then(() => {
+      this.codeCopied = true;
+      setTimeout(() => { this.codeCopied = false; }, 2000);
+    });
   }
 }

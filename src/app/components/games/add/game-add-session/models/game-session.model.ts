@@ -9,6 +9,7 @@ export interface CreateGameSessionFullRequest {
   costGems: number;
   totalGems: number;
   categoryId: string;
+  questionsPerPlayer: number;
   questions: CreateGameSessionFullQuestionRequest[];
   options: CreateGameSessionFullOptionRequest[];
 }

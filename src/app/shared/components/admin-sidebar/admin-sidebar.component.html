@@ -1,0 +1,72 @@
+<aside class="admin-sidebar" [class.collapsed]="collapsed()">
+
+  <!-- Branding -->
+  <div class="sidebar-brand">
+    <img src="assets/Images/LogoSH.png" alt="Sherlock" class="brand-logo" />
+    @if (!collapsed()) {
+      <span class="brand-badge">ADMIN</span>
+    }
+  </div>
+
+  <!-- Toggle -->
+  <button class="toggle-btn" type="button" (click)="toggleCollapse()" [title]="collapsed() ? 'Expandir' : 'Contraer'">
+    <ion-icon [name]="collapsed() ? 'menu-outline' : 'chevron-back-outline'"></ion-icon>
+  </button>
+
+  <!-- Nav -->
+  <nav class="sidebar-nav">
+    @for (item of menuItems; track item.label) {
+      <div class="nav-section">
+
+        <button
+          class="section-trigger"
+          type="button"
+          [class.open]="item.open"
+          [title]="collapsed() ? item.label : ''"
+          (click)="toggleSection(item)">
+          <ion-icon [name]="item.icon" class="section-icon"></ion-icon>
+          @if (!collapsed()) {
+            <span class="section-label">{{ item.label }}</span>
+            <ion-icon
+              name="chevron-forward-outline"
+              class="section-chevron"
+              [class.rotated]="item.open">
+            </ion-icon>
+          }
+        </button>
+
+        @if (item.open && !collapsed()) {
+          <div class="section-children">
+            @for (child of item.children; track child.route) {
+              <a
+                [routerLink]="child.route"
+                routerLinkActive="active"
+                class="child-link">
+                <ion-icon [name]="child.icon" class="child-icon"></ion-icon>
+                <span>{{ child.label }}</span>
+              </a>
+            }
+          </div>
+        }
+
+      </div>
+    }
+  </nav>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <div class="user-row" [title]="collapsed() ? userName : ''">
+      <div class="user-avatar">{{ userInitials }}</div>
+      @if (!collapsed()) {
+        <span class="username">{{ userName }}</span>
+      }
+    </div>
+    <button class="logout-btn" type="button" (click)="logout()" [title]="collapsed() ? 'Cerrar sesión' : ''">
+      <ion-icon name="log-out-outline"></ion-icon>
+      @if (!collapsed()) {
+        <span>Salir</span>
+      }
+    </button>
+  </div>
+
+</aside>

@@ -1,0 +1,173 @@
+<ion-content class="ranking-content" [fullscreen]="true" [scrollY]="true" [forceOverscroll]="false">
+
+  <div class="bg-layer" aria-hidden="true">
+    <div class="bg-glow bg-glow--purple"></div>
+    <div class="bg-glow bg-glow--blue"></div>
+  </div>
+
+  <section class="ranking-shell">
+
+    <!-- ── GAME INFO CARD ── -->
+    <div class="game-card">
+
+      <div class="game-card__header">
+        <div class="game-logo">
+          <span class="game-logo__letter">{{ (gameName || 'S').charAt(0).toUpperCase() }}</span>
+        </div>
+        <div class="game-header__meta">
+          <span class="game-type-label">URBAN GAME</span>
+          <h1 class="game-title">{{ gameName || 'Sherlock' }}</h1>
+          <div class="game-tags">
+            @if (gameZone) {
+              <span class="game-tag">
+                <ion-icon name="location-outline"></ion-icon>
+                {{ gameZone }}
+              </span>
+            }
+            @if (gameCategory) {
+              <span class="game-tag game-tag--star">
+                <ion-icon name="star-outline"></ion-icon>
+                {{ gameCategory }}
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (gameDesc) {
+        <div class="game-section">
+          <h3 class="game-section__label">// DESCRIPCIÓN DEL JUEGO</h3>
+          <p class="game-section__text">{{ gameDesc }}</p>
+        </div>
+      }
+
+      <div class="game-stats">
+        <div class="stat-box">
+          <ion-icon name="help-circle-outline" class="stat-box__icon--blue"></ion-icon>
+          <span class="stat-val stat-val--blue">{{ gameQuestions || 24 }}</span>
+          <span class="stat-label">Preguntas</span>
+        </div>
+        <div class="stat-box">
+          <ion-icon name="people-outline" class="stat-box__icon--purple"></ion-icon>
+          <span class="stat-val stat-val--purple">{{ totalPlayers }}</span>
+          <span class="stat-label">Jugadores</span>
+        </div>
+        <div class="stat-box">
+          <ion-icon name="time-outline" class="stat-box__icon--yellow"></ion-icon>
+          <span class="stat-val stat-val--yellow">{{ gameDuration || '45 min' }}</span>
+          <span class="stat-label">Duración</span>
+        </div>
+        <div class="stat-box">
+          <ion-icon name="flash-outline" class="stat-box__icon--red"></ion-icon>
+          <span class="stat-val stat-val--red">{{ gameDifficulty || 'Alta' }}</span>
+          <span class="stat-label">Dificultad</span>
+        </div>
+      </div>
+
+      <div class="game-section">
+        <h3 class="game-section__label">// DATOS GENERALES</h3>
+        <div class="general-data">
+          <div class="data-item">
+            <span class="data-item__label">Modalidad</span>
+            <span class="data-item__value">{{ gameMode || 'Equipos o individual' }}</span>
+          </div>
+          <div class="data-item">
+            <span class="data-item__label">Zona de juego</span>
+            <span class="data-item__value">{{ gameZone || 'Centro histórico' }}</span>
+          </div>
+          <div class="data-item">
+            <span class="data-item__label">Puntuación máx.</span>
+            <span class="data-item__value">{{ gameMaxScore || '3 000 pts' }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RANKING PANEL ── -->
+    <div class="ranking-panel">
+
+      <div class="ranking-panel__header">
+        <div class="ranking-panel__title">
+          <ion-icon name="trophy-outline"></ion-icon>
+          <span>RANKING</span>
+        </div>
+        <span class="players-badge">{{ totalPlayers }} jugadores</span>
+      </div>
+
+      @if (isLoading) {
+        <div class="ranking-loader">
+          <ion-spinner name="crescent" color="light"></ion-spinner>
+          <p>Cargando ranking...</p>
+        </div>
+      }
+
+      @if (!isLoading && errorMessage && rankingPlayers.length === 0) {
+        <div class="ranking-empty">
+          <span class="ranking-empty__icon">🔍</span>
+          <p>{{ errorMessage }}</p>
+          <small>Puedes entrar al juego desde el botón inferior.</small>
+        </div>
+      }
+
+      @if (!isLoading && rankingPlayers.length > 0) {
+        <div class="ranking-list">
+          @for (player of rankingPlayers; track player.position; let i = $index) {
+            <div class="rank-row"
+              [class.rank-row--gold]="player.position === 1"
+              [class.rank-row--silver]="player.position === 2"
+              [class.rank-row--bronze]="player.position === 3"
+              [class.rank-row--me]="player.isCurrentUser"
+              [style.animation-delay.ms]="getRowAnimationDelay(i)">
+
+              <div class="rank-pos">
+                @if (player.position === 1) {
+                  <ion-icon name="trophy-outline" class="trophy-icon trophy-icon--gold"></ion-icon>
+                } @else if (player.position === 2) {
+                  <ion-icon name="trophy-outline" class="trophy-icon trophy-icon--silver"></ion-icon>
+                } @else if (player.position === 3) {
+                  <ion-icon name="trophy-outline" class="trophy-icon trophy-icon--bronze"></ion-icon>
+                } @else {
+                  <span class="rank-num">#{{ player.position }}</span>
+                }
+              </div>
+
+              <div class="rank-avatar" [class.rank-avatar--me]="player.isCurrentUser">
+                {{ player.avatar }}
+              </div>
+
+              <div class="rank-info">
+                <span class="rank-name" [class.rank-name--gold]="player.position === 1">
+                  {{ player.name }}
+                  @if (player.isCurrentUser) {
+                    <span class="rank-you-tag">Tú</span>
+                  }
+                </span>
+              </div>
+
+              <div class="rank-pts">
+                <strong [class.pts--gold]="player.position === 1">{{ player.points | number }} pts</strong>
+              </div>
+
+            </div>
+          }
+        </div>
+      }
+
+      <div class="ranking-panel__footer">
+        <ion-icon name="radio-outline"></ion-icon>
+        Actualizado en tiempo real
+      </div>
+
+    </div>
+
+    <!-- ── CTA ── -->
+    <footer class="ranking-footer">
+      <ion-button expand="block" class="enter-btn" (click)="continueNow()">
+        ENTRAR AL JUEGO
+        <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+      </ion-button>
+    </footer>
+
+  </section>
+</ion-content>

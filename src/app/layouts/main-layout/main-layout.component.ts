@@ -9,6 +9,7 @@ import { AuthService } from 'src/app/components/auth/services/auth';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { FooterComponent } from '../../shared/components/footer/footer.component';
 import { SidebarMenuComponent } from '../../shared/components/sidebar-menu/sidebar-menu.component';
+import { AdminSidebarComponent } from '../../shared/components/admin-sidebar/admin-sidebar.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -19,9 +20,8 @@ import { SidebarMenuComponent } from '../../shared/components/sidebar-menu/sideb
     HeaderComponent,
     FooterComponent,
     SidebarMenuComponent,
+    AdminSidebarComponent,
     IonMenu,
-    
-    
     IonContent,
   ],
   templateUrl: './main-layout.component.html',
@@ -33,6 +33,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   isLandscape = false;
   isGamesRoute = false;
   isPocketRankingRoute = false;
+  isAdminRoute = false;
   private readonly subscriptions = new Subscription();
 
   constructor(
@@ -69,8 +70,15 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   shouldHideLayoutChrome(): boolean {
-    // Games routes render their own HUD; hide app-level header/footer there.
-    return this.isPocketRankingRoute || this.isGamesRoute;
+    return this.isPocketRankingRoute || this.isGamesRoute || this.isAdminRoute;
+  }
+
+  shouldShowAdminHeader(): boolean {
+    return this.isAdminRoute;
+  }
+
+  shouldUseLightTheme(): boolean {
+    return !this.isGamesRoute;
   }
 
   toggleMenu(): void {
@@ -94,7 +102,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   private updateRouteState(url: string): void {
-    this.isGamesRoute = url.startsWith('/games');
+    this.isAdminRoute = url.startsWith('/games/admin');
+    this.isGamesRoute = url.startsWith('/games') && !this.isAdminRoute;
     this.isPocketRankingRoute = url.startsWith('/games/pocket/ranking');
   }
 }

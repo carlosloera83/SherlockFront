@@ -4,27 +4,29 @@
       <div class="combat-frame">
         <aside class="combat-sidebar">
           <article class="combat-profile-card" (click)="$event.stopPropagation()">
-            <button type="button" class="combat-profile-card__avatar" (click)="toggleUserMenu($event)">
-              <img
-                class="combat-profile-card__avatar-photo"
-                [src]="profileAvatarUrl"
-                [alt]="userDisplayName"
-                (error)="onProfileAvatarError()" />
-              @if (profileAvatarHasError) {
-                <span class="combat-profile-card__avatar-initial">{{ userInitial }}</span>
-              }
-              <img class="combat-profile-card__avatar-frame" src="assets/Images/principal/Marco_Dorado2.png" alt="" aria-hidden="true" />
-            </button>
+            <div class="combat-profile-card__row">
+              <button type="button" class="combat-profile-card__avatar" (click)="toggleUserMenu($event)">
+                <img
+                  class="combat-profile-card__avatar-photo"
+                  [src]="profileAvatarUrl"
+                  [alt]="userDisplayName"
+                  (error)="onProfileAvatarError()" />
+                @if (profileAvatarHasError) {
+                  <span class="combat-profile-card__avatar-initial">{{ userInitial }}</span>
+                }
+                <img class="combat-profile-card__avatar-frame" src="assets/Images/principal/Marco_Dorado2.png" alt="" aria-hidden="true" />
+              </button>
 
-            <div class="combat-profile-card__copy">
-              <strong class="combat-profile-card__name">{{ userDisplayName }}</strong>
-              <span class="combat-profile-card__lvl">Nv.{{ profileLevel }}</span>
-              <small>Detective Master</small>
-              <div class="combat-profile-card__xp-row">
-                <div class="combat-profile-card__progress">
-                  <span [style.width.%]="getProfileProgressPercent()"></span>
+              <div class="combat-profile-card__copy">
+                <strong class="combat-profile-card__name">{{ userDisplayName }}</strong>
+                <span class="combat-profile-card__lvl">Nv.{{ profileLevel }}</span>
+                <small>Detective Master</small>
+                <div class="combat-profile-card__xp-row">
+                  <div class="combat-profile-card__progress">
+                    <span [style.width.%]="getProfileProgressPercent()"></span>
+                  </div>
+                  <span class="combat-profile-card__xp-pct">{{ getProfileProgressPercent() | number:'1.0-0' }}%</span>
                 </div>
-                <span class="combat-profile-card__xp-pct">{{ getProfileProgressPercent() | number:'1.0-0' }}%</span>
               </div>
             </div>
 
@@ -59,6 +61,25 @@
             <div class="sidebar-stat-pill sidebar-stat-pill--rank">
               <strong>#{{ dashboardStats?.globalRank || profileLevel }}</strong>
               <small>Ranking</small>
+            </div>
+          </div>
+
+          <div class="combat-code-search" role="search" aria-label="Buscar por código">
+            <div class="combat-code-search__field">
+              <ion-icon name="search-outline" class="combat-code-search__icon" aria-hidden="true"></ion-icon>
+              <input
+                type="text"
+                class="combat-code-search__input"
+                placeholder="Código de sesión..."
+                [value]="sessionCodeInput"
+                (input)="onCodeInput($event)"
+                (keyup.enter)="goToSessionByCode()"
+                aria-label="Ingresar código de sesión" />
+              @if (sessionCodeInput.trim().length > 0) {
+                <button type="button" class="combat-code-search__btn" (click)="goToSessionByCode()">
+                  Ir
+                </button>
+              }
             </div>
           </div>
 
